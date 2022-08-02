@@ -7,4 +7,5 @@ import "github.com/gin-gonic/gin"
 func (s *Server) Register(e *gin.Engine) {
 	api := e.Group("/api")
 	api.GET("/events", s.GetEvents)
+	api.POST("/events", s.PostEvent)
 }

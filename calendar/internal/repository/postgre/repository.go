@@ -7,6 +7,7 @@ import (
 	"github.com/Roma7-7-7/workshops/calendar/internal/models"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
+	"time"
 )
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
@@ -15,7 +16,7 @@ type Repository struct {
 	db *sql.DB
 }
 
-func (r Repository) GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string) ([]models.Event, error) {
+func (r *Repository) GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string) ([]*models.Event, error) {
 	filters := sq.And{}
 
 	if title != "" {
@@ -51,16 +52,33 @@ func (r Repository) GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string) 
 		return nil, fmt.Errorf(`querying with sql="%s": %v`, query, err)
 	}
 
-	var result []models.Event
+	var result []*models.Event
 	for rows.Next() {
 		var event models.Event
 		if err = rows.Scan(&event.ID, &event.Title, &event.Description, &event.TimeFrom, &event.TimeTo, pq.Array(&event.Notes)); err != nil {
 			return nil, fmt.Errorf("scan event: %v", err)
 		}
-		result = append(result, event)
+		result = append(result, &event)
 	}
 
 	return result, nil
+}
+
+func (r *Repository) CreateEvent(title string, description string, from time.Time, to time.Time, notes []string) (*models.Event, error) {
+	query := psql.Insert("event").
+		Columns("id", "title", "description", "timestamp_from", "timestamp_to", "notes").
+		Values(sq.Expr("gen_random_uuid()"), title, description, from, to, pq.Array(notes)).
+		Suffix("RETURNING id, title, description, timestamp_from, timestamp_to, notes").
+		RunWith(r.db)
+
+	var event models.Event
+
+	err := query.QueryRow().Scan(&event.ID, &event.Title, &event.Description, &event.TimeFrom, &event.TimeTo, pq.Array(&event.Notes))
+	if err != nil {
+		return nil, fmt.Errorf("insert event: %v", err)
+	}
+
+	return &event, nil
 }
 
 func NewRepository(dsn string) *Repository {
