@@ -13,17 +13,18 @@ import (
 func (s *Server) GetEvents(c *gin.Context) {
 	req := validator.GetEvents{
 		Title:    c.Query("title"),
-		DateFrom: c.Query("date_from"),
-		TimeFrom: c.Query("time_from"),
-		DateTo:   c.Query("date_to"),
-		TimeTo:   c.Query("time_to"),
+		Timezone: c.Query("timezone"),
+		DateFrom: c.Query("dateFrom"),
+		TimeFrom: c.Query("timeFrom"),
+		DateTo:   c.Query("dateTo"),
+		TimeTo:   c.Query("timeTo"),
 	}
 	if err := s.valid.Validate(req); err != nil {
 		badRequest(c, err)
 		return
 	}
 
-	events, err := s.service.GetEvents(req.Title, req.DateFrom, req.TimeFrom, req.DateTo, req.TimeTo)
+	events, err := s.service.GetEvents(req.Title, req.DateFrom, req.TimeFrom, req.DateTo, req.TimeTo, req.Timezone)
 	if err != nil {
 		log.Printf("get events: %v\n", err)
 		serverError(c, err)
