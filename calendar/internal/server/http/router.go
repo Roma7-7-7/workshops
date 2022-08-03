@@ -6,10 +6,5 @@ import "github.com/gin-gonic/gin"
 
 func (s *Server) Register(e *gin.Engine) {
 	api := e.Group("/api")
-	events := api.Group("/events")
-	events.GET("/", s.GetEvents)
-	events.GET("/:id", s.GetEvent)
-	events.POST("/", s.PostEvent)
-	events.PUT("/:id", s.PutEvent)
-	events.DELETE("/:id", s.DeleteEvent)
+	s.registerEvents(api.Group("/events"))
 }

@@ -111,6 +111,14 @@ func (s *Server) DeleteEvent(c *gin.Context) {
 	}
 }
 
+func (s *Server) registerEvents(group *gin.RouterGroup) {
+	group.GET("/", s.GetEvents)
+	group.GET("/:id", s.GetEvent)
+	group.POST("/", s.PostEvent)
+	group.PUT("/:id", s.PutEvent)
+	group.DELETE("/:id", s.DeleteEvent)
+}
+
 func toApi(e *models.Event) *api.Event {
 	var tz string
 	if l := e.TimeFrom.Location(); l == nil {
