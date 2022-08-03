@@ -2,13 +2,15 @@ package config
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
+	"io/ioutil"
+	"os"
 	"sync"
 )
 
 // Application holds application configuration values
 type Application struct {
-	DB *Database
+	DB *Database `yaml:"db"`
 }
 
 type Database struct {
@@ -17,63 +19,54 @@ type Database struct {
 	Name     string `yaml:"name"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
-	SSLMode  bool   `yaml:"sslmode"`
+	SSLMode  string `yaml:"sslmode"`
 }
 
 var instance *Application
 var once sync.Once
 
 func GetConfig() *Application {
-	once.Do(func() {
-		viper.AddConfigPath(".")
-		viper.SetConfigName("config")
-		viper.SetConfigType("yaml")
-		viper.AutomaticEnv()
-		if err := viper.ReadInConfig(); err != nil {
-			panic(err)
-		}
-
-		viper.SetDefault("db.host", "localhost")
-		viper.SetDefault("db.port", "5432")
-		viper.SetDefault("db.name", "gotest")
-		viper.SetDefault("db.user", "gouser")
-		viper.SetDefault("db.password", "gopassword")
-		viper.SetDefault("db.sslmode", true)
-
-		instance = &Application{}
-		if err := viper.Unmarshal(instance); err != nil {
-			panic(err)
-		}
-
-		overrideIfPresentS(&instance.DB.Host, "DB_HOST")
-		overrideIfPresentS(&instance.DB.Port, "DB_PORT")
-		overrideIfPresentS(&instance.DB.Name, "DB_NAME")
-		overrideIfPresentS(&instance.DB.User, "DB_USER")
-		overrideIfPresentS(&instance.DB.Password, "DB_PASSWORD")
-		overrideIfPresentB(&instance.DB.SSLMode, "DB_SSL_MODE")
-
-	})
+	once.Do(initApplicationConfig)
 	return instance
 }
 
+func initApplicationConfig() {
+	instance = &Application{
+		DB: &Database{},
+	}
+
+	if err := yaml.Unmarshal(configBytes(), instance); err != nil {
+		panic(err)
+	}
+
+	overrideByEnv(&instance.DB.Host, "DB_HOST", "localhost")
+	overrideByEnv(&instance.DB.Port, "DB_PORT", "5432")
+	overrideByEnv(&instance.DB.Name, "DB_NAME", "gotest")
+	overrideByEnv(&instance.DB.User, "DB_USER", "gouser")
+	overrideByEnv(&instance.DB.Password, "DB_PASSWORD", "gopassword")
+	overrideByEnv(&instance.DB.SSLMode, "DB_SSL_MODE", "")
+}
+
 func (a *Application) DSN() string {
-	res := fmt.Sprintf("user=%s password=%s dbname=%s", a.DB.User, a.DB.Password, a.DB.Name)
-	if !a.DB.SSLMode {
-		res = res + " sslmode=disable"
+	res := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s", a.DB.Host, a.DB.Port, a.DB.User, a.DB.Password, a.DB.Name)
+	if a.DB.SSLMode != "" {
+		res = res + " sslmode=" + a.DB.SSLMode
 	}
 	return res
 }
 
-func overrideIfPresentS(target *string, key string) {
-	if viper.IsSet(key) {
-		val := viper.GetString(key)
-		*target = val
+var configBytes = func() []byte {
+	res, err := ioutil.ReadFile("config.yaml")
+	if err != nil {
+		panic(err)
 	}
+	return res
 }
 
-func overrideIfPresentB(target *bool, key string) {
-	if viper.IsSet(key) {
-		val := viper.GetBool(key)
-		*target = val
+func overrideByEnv(target *string, key string, def string) {
+	if value := os.Getenv(key); value != "" {
+		*target = value
+	} else if *target == "" && def != "" {
+		*target = def
 	}
 }

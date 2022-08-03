@@ -4,4 +4,4 @@ db:
   name: gotest
   user: gouser
   password: gopassword
-  sslmode: false
+  sslmode: disable
