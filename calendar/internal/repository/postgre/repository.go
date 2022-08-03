@@ -84,6 +84,14 @@ func (r *Repository) GetEvent(id string) (*models.Event, error) {
 	return &event, nil
 }
 
+func (r *Repository) Exists(id string) (bool, error) {
+	var count int
+	if err := psql.Select("COUNT(*)").From("event").Where(sq.Eq{"id": id}).RunWith(r.db).QueryRow().Scan(&count); err != nil {
+		return false, fmt.Errorf("check if exists: %v", err)
+	}
+	return count > 0, nil
+}
+
 func (r *Repository) CreateEvent(title string, description string, from time.Time, to time.Time, notes []string) (*models.Event, error) {
 	query := psql.Insert("event").
 		Columns("id", "title", "description", "timestamp_from", "timestamp_to", "notes").
