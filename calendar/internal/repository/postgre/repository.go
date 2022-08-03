@@ -130,6 +130,16 @@ func (r *Repository) UpdateEvent(id, title, description string, from time.Time, 
 	return &event, nil
 }
 
+func (r *Repository) DeleteEvent(id string) (bool, error) {
+	if res, err := psql.Delete("event").Where(sq.Eq{"id": id}).RunWith(r.db).Exec(); err != nil {
+		return false, fmt.Errorf("delete event: %v", err)
+	} else if count, err := res.RowsAffected(); err != nil {
+		return false, fmt.Errorf("delete event: %v", err)
+	} else {
+		return count > 0, nil
+	}
+}
+
 func NewRepository(dsn string) *Repository {
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {

@@ -16,6 +16,7 @@ type Repository interface {
 	Exists(id string) (bool, error)
 	CreateEvent(title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
 	UpdateEvent(id, title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
+	DeleteEvent(id string) (bool, error)
 }
 
 // Service holds calendar business logic and works with repository
@@ -73,6 +74,10 @@ func (s *Service) UpdateEvent(id, title, description, timeVal, timezone string, 
 		return nil, err
 	}
 	return s.repo.UpdateEvent(id, title, description, *timeFrom, *timeTo, notes)
+}
+
+func (s *Service) DeleteEvent(id string) (bool, error) {
+	return s.repo.DeleteEvent(id)
 }
 
 func timeFromTo(timeVal, timezone string, duration time.Duration) (*time.Time, *time.Time, error) {

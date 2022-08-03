@@ -96,6 +96,21 @@ func (s *Server) PutEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, toApi(e))
 }
 
+func (s *Server) DeleteEvent(c *gin.Context) {
+	id := c.Param("id")
+	if ok, err := s.service.DeleteEvent(id); err != nil {
+		log.Printf("delete event: %v\n", err)
+		serverError(c, err)
+		return
+	} else if !ok {
+		notFound(c, fmt.Sprintf("event with id=\"%s\"", id))
+		return
+	} else {
+		c.AbortWithStatus(http.StatusOK)
+		return
+	}
+}
+
 func toApi(e *models.Event) *api.Event {
 	var tz string
 	if l := e.TimeFrom.Location(); l == nil {

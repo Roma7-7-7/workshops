@@ -11,4 +11,5 @@ func (s *Server) Register(e *gin.Engine) {
 	events.GET("/:id", s.GetEvent)
 	events.POST("/", s.PostEvent)
 	events.PUT("/:id", s.PutEvent)
+	events.DELETE("/:id", s.DeleteEvent)
 }
