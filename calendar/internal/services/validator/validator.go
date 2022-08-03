@@ -30,6 +30,16 @@ type CreateEvent struct {
 	Notes       []string `json:"notes"`
 }
 
+type UpdateEvent struct {
+	Id          string   `json:"id"`
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	Time        string   `json:"time"`
+	Timezone    string   `json:"timezone"`
+	Duration    int      `json:"duration"`
+	Notes       []string `json:"notes"`
+}
+
 func (s *Service) Validate(v interface{}) error {
 	errors := make([]string, 0, 10)
 	switch t := v.(type) {
@@ -62,18 +72,16 @@ func (s *Service) Validate(v interface{}) error {
 		}
 		return nil
 	case CreateEvent:
-		if strings.TrimSpace(t.Title) == "" {
-			errors = append(errors, "title must not be blank")
+		errors = validateEventModification(errors, t.Title, t.Time, t.Timezone, t.Duration)
+		if len(errors) > 0 {
+			return fmt.Errorf("validation errors: [%s]", strings.Join(errors, "; "))
 		}
-		if _, err := time.Parse(calendar.DateTimeLayout, t.Time); err != nil {
-			errors = append(errors, "invalid time value")
+		return nil
+	case UpdateEvent:
+		if strings.TrimSpace(t.Id) == "" {
+			errors = append(errors, "id must not be blank")
 		}
-		if _, err := time.LoadLocation(t.Timezone); err != nil || strings.TrimSpace(t.Timezone) == "" {
-			errors = append(errors, "timezone must not be blank and be a valid timezone")
-		}
-		if t.Duration <= 0 {
-			errors = append(errors, "duration must be greater than 0")
-		}
+		errors = validateEventModification(errors, t.Title, t.Time, t.Timezone, t.Duration)
 		if len(errors) > 0 {
 			return fmt.Errorf("validation errors: [%s]", strings.Join(errors, "; "))
 		}
@@ -82,4 +90,20 @@ func (s *Service) Validate(v interface{}) error {
 		log.Printf("Validation of type %T is not supported\n", t)
 		return nil
 	}
+}
+
+func validateEventModification(errors []string, title, timeVal, timezone string, duration int) []string {
+	if strings.TrimSpace(title) == "" {
+		errors = append(errors, "title must not be blank")
+	}
+	if _, err := time.Parse(calendar.DateTimeLayout, timeVal); err != nil {
+		errors = append(errors, "invalid time value")
+	}
+	if _, err := time.LoadLocation(timezone); err != nil || strings.TrimSpace(timezone) == "" {
+		errors = append(errors, "timezone must not be blank and be a valid timezone")
+	}
+	if duration <= 0 {
+		errors = append(errors, "duration must be greater than 0")
+	}
+	return errors
 }

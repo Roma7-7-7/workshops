@@ -101,6 +101,27 @@ func (r *Repository) CreateEvent(title string, description string, from time.Tim
 	return &event, nil
 }
 
+func (r *Repository) UpdateEvent(id, title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error) {
+	query := psql.Update("event").
+		Set("title", title).
+		Set("description", description).
+		Set("timestamp_from", from).
+		Set("timestamp_to", to).
+		Set("notes", pq.Array(notes)).
+		Where(sq.Eq{"id": id}).
+		RunWith(r.db).
+		Suffix("RETURNING id, title, description, timestamp_from, timestamp_to, notes")
+
+	var event models.Event
+
+	err := query.QueryRow().Scan(&event.ID, &event.Title, &event.Description, &event.TimeFrom, &event.TimeTo, pq.Array(&event.Notes))
+	if err != nil {
+		return nil, fmt.Errorf("update event: %v", err)
+	}
+
+	return &event, nil
+}
+
 func NewRepository(dsn string) *Repository {
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {

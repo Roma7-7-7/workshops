@@ -6,14 +6,15 @@ import (
 	"time"
 )
 
-const DateTimeLayout = "2006-01-02 03:04"
+const DateTimeLayout = "2006-01-02 15:04"
 const DateLayout = "2006-01-02"
 const TimeLayout = "15:04"
 
 type Repository interface {
 	GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string) ([]*models.Event, error)
-	CreateEvent(title string, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
 	GetEvent(id string) (*models.Event, error)
+	CreateEvent(title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
+	UpdateEvent(id, title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
 }
 
 // Service holds calendar business logic and works with repository
@@ -52,16 +53,32 @@ func (s *Service) GetEvent(id string) (*models.Event, error) {
 }
 
 func (s *Service) CreateEvent(title, description, timeVal, timezone string, duration time.Duration, notes []string) (*models.Event, error) {
+	timeFrom, timeTo, err := timeFromTo(timeVal, timezone, duration)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.CreateEvent(title, description, *timeFrom, *timeTo, notes)
+}
+
+func (s *Service) UpdateEvent(id, title, description, timeVal, timezone string, duration time.Duration, notes []string) (*models.Event, error) {
+	timeFrom, timeTo, err := timeFromTo(timeVal, timezone, duration)
+	if err != nil {
+		return nil, err
+	}
+	return s.repo.UpdateEvent(id, title, description, *timeFrom, *timeTo, notes)
+}
+
+func timeFromTo(timeVal, timezone string, duration time.Duration) (*time.Time, *time.Time, error) {
 	l, err := time.LoadLocation(timezone)
 	if err != nil {
-		return nil, fmt.Errorf("invalid location %s: %v", timezone, err)
+		return nil, nil, fmt.Errorf("invalid location %s: %v", timezone, err)
 	}
 	timeFrom, err := time.ParseInLocation(DateTimeLayout, timeVal, l)
 	if err != nil {
-		return nil, fmt.Errorf("invalid time %s: %v", timeVal, err)
+		return nil, nil, fmt.Errorf("invalid time %s: %v", timeVal, err)
 	}
-
-	return s.repo.CreateEvent(title, description, timeFrom, timeFrom.Add(duration), notes)
+	timeTo := timeFrom.Add(duration)
+	return &timeFrom, &timeTo, nil
 }
 
 func normalizeDateTime(date string, timev string, timezone string) (string, string, error) {

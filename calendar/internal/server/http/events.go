@@ -72,6 +72,25 @@ func (s *Server) PostEvent(c *gin.Context) {
 	c.JSON(http.StatusOK, toApi(e))
 }
 
+func (s *Server) PutEvent(c *gin.Context) {
+	var req validator.UpdateEvent
+	c.BindJSON(&req)
+	req.Id = c.Param("id")
+	if err := s.valid.Validate(req); err != nil {
+		badRequest(c, err)
+		return
+	}
+
+	e, err := s.service.UpdateEvent(req.Id, req.Title, req.Description, req.Time, req.Timezone, time.Duration(req.Duration)*time.Minute, req.Notes)
+	if err != nil {
+		log.Printf("update event: %v\n", err)
+		serverError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, toApi(e))
+}
+
 func toApi(e *models.Event) *api.Event {
 	var tz string
 	if l := e.TimeFrom.Location(); l == nil {
