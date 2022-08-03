@@ -47,6 +47,7 @@ func (r *Repository) GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string)
 
 	var rows *sql.Rows
 	rows, err = r.db.Query(query, args...)
+	defer rows.Close()
 
 	if err != nil {
 		return nil, fmt.Errorf(`querying with sql="%s": %v`, query, err)
@@ -62,6 +63,25 @@ func (r *Repository) GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string)
 	}
 
 	return result, nil
+}
+
+func (r *Repository) GetEvent(id string) (*models.Event, error) {
+	query, args, err := psql.Select("id", "title", "description", "timestamp_from", "timestamp_to", "notes").
+		From("event").
+		Where(sq.Eq{"id": id}).
+		ToSql()
+
+	if err != nil {
+		return nil, fmt.Errorf("build event query: %v", err)
+	}
+	var event models.Event
+	if err = r.db.QueryRow(query, args...).Scan(&event.ID, &event.Title, &event.Description, &event.TimeFrom, &event.TimeTo, pq.Array(&event.Notes)); err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("scan event: %v", err)
+	}
+
+	return &event, nil
 }
 
 func (r *Repository) CreateEvent(title string, description string, from time.Time, to time.Time, notes []string) (*models.Event, error) {

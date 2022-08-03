@@ -13,6 +13,7 @@ const TimeLayout = "15:04"
 type Repository interface {
 	GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string) ([]*models.Event, error)
 	CreateEvent(title string, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
+	GetEvent(id string) (*models.Event, error)
 }
 
 // Service holds calendar business logic and works with repository
@@ -44,6 +45,10 @@ func (s *Service) GetEvents(title, dateFrom, timeFrom, dateTo, timeTo, timezone 
 		}
 	}
 	return s.repo.GetEvents(title, dateFrom, timeFrom, dateTo, timeTo)
+}
+
+func (s *Service) GetEvent(id string) (*models.Event, error) {
+	return s.repo.GetEvent(id)
 }
 
 func (s *Service) CreateEvent(title, description, timeVal, timezone string, duration time.Duration, notes []string) (*models.Event, error) {

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"github.com/Roma7-7-7/workshops/calendar/internal/services/calendar"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -29,6 +30,12 @@ type GenericResponse struct {
 func badRequest(c *gin.Context, err error) {
 	c.JSON(http.StatusBadRequest, GenericResponse{
 		Message: err.Error(),
+	})
+}
+
+func notFound(c *gin.Context, entity string) {
+	c.JSON(http.StatusNotFound, GenericResponse{
+		Message: fmt.Sprintf("%s not found", entity),
 	})
 }
 

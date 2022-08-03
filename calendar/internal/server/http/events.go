@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"github.com/Roma7-7-7/workshops/calendar/api"
 	"github.com/Roma7-7-7/workshops/calendar/internal/models"
 	"github.com/Roma7-7-7/workshops/calendar/internal/services/validator"
@@ -36,6 +37,21 @@ func (s *Server) GetEvents(c *gin.Context) {
 		result[i] = toApi(e)
 	}
 	c.JSON(http.StatusOK, result)
+}
+
+func (s *Server) GetEvent(c *gin.Context) {
+	id := c.Param("id")
+	event, err := s.service.GetEvent(id)
+	if err != nil {
+		log.Printf("get event: %v", err)
+		serverError(c, err)
+		return
+	}
+	if event == nil {
+		notFound(c, fmt.Sprintf("event with id=\"%s\"", id))
+		return
+	}
+	c.JSON(http.StatusOK, event)
 }
 
 func (s *Server) PostEvent(c *gin.Context) {
