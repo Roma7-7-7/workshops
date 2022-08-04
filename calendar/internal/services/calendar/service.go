@@ -83,15 +83,20 @@ func (s *Service) DeleteEvent(id string) (bool, error) {
 func timeFromTo(timeVal, timezone string, duration time.Duration) (*time.Time, *time.Time, error) {
 	l, err := time.LoadLocation(timezone)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid location %s: %v", timezone, err)
+		return nil, nil, fmt.Errorf("invalid location \"%s\": %v", timezone, err)
+	}
+	if duration <= 0 {
+		return nil, nil, fmt.Errorf("duration must be greateer than 0")
 	}
 	timeFrom, err := time.ParseInLocation(DateTimeLayout, timeVal, l)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid time %s: %v", timeVal, err)
+		return nil, nil, fmt.Errorf("invalid datetime \"%s\": %v", timeVal, err)
 	}
 	timeTo := timeFrom.Add(duration)
 	return &timeFrom, &timeTo, nil
 }
+
+var systemLocation = time.Local
 
 func normalizeDateTime(date string, timev string, timezone string) (string, string, error) {
 	if date == "" && timev == "" {
@@ -100,7 +105,7 @@ func normalizeDateTime(date string, timev string, timezone string) (string, stri
 
 	loc, err := time.LoadLocation(timezone)
 	if err != nil {
-		return "", "", fmt.Errorf("invalid timzone: %v", err)
+		return "", "", fmt.Errorf("invalid timezone=\"%s\": %v", timezone, err)
 	}
 
 	if loc == nil {
@@ -110,9 +115,9 @@ func normalizeDateTime(date string, timev string, timezone string) (string, stri
 	dateTime := fmt.Sprintf("%s %s", date, timev)
 	zoned, err := time.ParseInLocation(DateTimeLayout, dateTime, loc)
 	if err != nil {
-		return "", "", fmt.Errorf("convert date time %s: %v", dateTime, err)
+		return "", "", fmt.Errorf("convert datetime=\"%s\": %v", dateTime, err)
 	}
-	converted := zoned.In(time.Now().Location())
+	converted := zoned.In(systemLocation)
 
 	return converted.Format(DateLayout), converted.Format(TimeLayout), nil
 }
