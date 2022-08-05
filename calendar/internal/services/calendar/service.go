@@ -11,9 +11,10 @@ const DateLayout = "2006-01-02"
 const TimeLayout = "15:04"
 
 type Repository interface {
+	// Events
 	GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string) ([]*models.Event, error)
 	GetEvent(id string) (*models.Event, error)
-	Exists(id string) (bool, error)
+	EventExists(id string) (bool, error)
 	CreateEvent(title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
 	UpdateEvent(id, title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
 	DeleteEvent(id string) (bool, error)
@@ -63,7 +64,7 @@ func (s *Service) CreateEvent(title, description, timeVal, timezone string, dura
 }
 
 func (s *Service) UpdateEvent(id, title, description, timeVal, timezone string, duration time.Duration, notes []string) (*models.Event, error) {
-	if ok, err := s.repo.Exists(id); err != nil {
+	if ok, err := s.repo.EventExists(id); err != nil {
 		return nil, err
 	} else if !ok {
 		return nil, nil
