@@ -21,14 +21,14 @@ func (s *Server) GetEvents(c *gin.Context) {
 		TimeTo:   c.Query("timeTo"),
 	}
 	if err := s.valid.Validate(req); err != nil {
-		badRequest(c, err)
+		api.BadRequestA(c, err)
 		return
 	}
 
 	events, err := s.service.GetEvents(req.Title, req.DateFrom, req.TimeFrom, req.DateTo, req.TimeTo, req.Timezone)
 	if err != nil {
 		log.Printf("get events: %v\n", err)
-		serverError(c, err)
+		api.ServerErrorA(c, err)
 		return
 	}
 
@@ -44,11 +44,11 @@ func (s *Server) GetEvent(c *gin.Context) {
 	event, err := s.service.GetEvent(id)
 	if err != nil {
 		log.Printf("get event: %v", err)
-		serverError(c, err)
+		api.ServerErrorA(c, err)
 		return
 	}
 	if event == nil {
-		notFound(c, fmt.Sprintf("event with id=\"%s\"", id))
+		api.NotFoundA(c, fmt.Sprintf("event with id=\"%s\"", id))
 		return
 	}
 	c.JSON(http.StatusOK, event)
@@ -58,14 +58,14 @@ func (s *Server) PostEvent(c *gin.Context) {
 	var req validator.CreateEvent
 	c.BindJSON(&req)
 	if err := s.valid.Validate(req); err != nil {
-		badRequest(c, err)
+		api.BadRequestA(c, err)
 		return
 	}
 
 	e, err := s.service.CreateEvent(req.Title, req.Description, req.Time, req.Timezone, time.Duration(req.Duration)*time.Minute, req.Notes)
 	if err != nil {
 		log.Printf("create event: %v\n", err)
-		serverError(c, err)
+		api.ServerErrorA(c, err)
 		return
 	}
 
@@ -78,18 +78,18 @@ func (s *Server) PutEvent(c *gin.Context) {
 	c.BindJSON(&req)
 	req.Id = id
 	if err := s.valid.Validate(req); err != nil {
-		badRequest(c, err)
+		api.BadRequestA(c, err)
 		return
 	}
 
 	e, err := s.service.UpdateEvent(req.Id, req.Title, req.Description, req.Time, req.Timezone, time.Duration(req.Duration)*time.Minute, req.Notes)
 	if err != nil {
 		log.Printf("update event: %v\n", err)
-		serverError(c, err)
+		api.ServerErrorA(c, err)
 		return
 	}
 	if e == nil {
-		notFound(c, fmt.Sprintf("event with id=\"%s\"", id))
+		api.NotFoundA(c, fmt.Sprintf("event with id=\"%s\"", id))
 		return
 	}
 
@@ -100,10 +100,10 @@ func (s *Server) DeleteEvent(c *gin.Context) {
 	id := c.Param("id")
 	if ok, err := s.service.DeleteEvent(id); err != nil {
 		log.Printf("delete event: %v\n", err)
-		serverError(c, err)
+		api.ServerErrorA(c, err)
 		return
 	} else if !ok {
-		notFound(c, fmt.Sprintf("event with id=\"%s\"", id))
+		api.NotFoundA(c, fmt.Sprintf("event with id=\"%s\"", id))
 		return
 	} else {
 		c.AbortWithStatus(http.StatusOK)

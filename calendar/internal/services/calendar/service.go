@@ -18,6 +18,8 @@ type Repository interface {
 	CreateEvent(title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
 	UpdateEvent(id, title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
 	DeleteEvent(id string) (bool, error)
+	// Users
+	GetUser(username string) (*models.User, error)
 }
 
 // Service holds calendar business logic and works with repository

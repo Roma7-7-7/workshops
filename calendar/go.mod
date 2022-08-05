@@ -8,6 +8,7 @@ require (
 	github.com/lib/pq v1.10.6
 	github.com/stretchr/testify v1.8.0
 	gopkg.in/yaml.v3 v3.0.1
+	github.com/golang-jwt/jwt/v4 v4.4.2
 )
 
 require (
