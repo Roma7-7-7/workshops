@@ -19,11 +19,23 @@ type Middleware struct {
 	secret string
 }
 
+type Claims struct {
+	Timezone string
+	jwt.RegisteredClaims
+}
+
 const сontextKey = "auth"
 
 type Context struct {
-	JWT      *jwt.RegisteredClaims
-	Username string
+	JWT *Claims
+}
+
+func (c *Context) Username() string {
+	return c.JWT.Subject
+}
+
+func (c *Context) UserTimezone() string {
+	return c.JWT.Timezone
 }
 
 func GetContext(c *gin.Context) *Context {
@@ -87,14 +99,13 @@ func (m *Middleware) Validate(c *gin.Context) {
 		return
 	}
 
-	cl := &jwt.RegisteredClaims{}
+	cl := &Claims{}
 	if _, err = jwt.ParseWithClaims(tokenS, cl, m.keyFunc); err != nil {
 		api.ServerErrorA(c, err)
 		return
 	}
 	c.Set(сontextKey, &Context{
-		JWT:      cl,
-		Username: cl.Subject,
+		JWT: cl,
 	})
 }
 

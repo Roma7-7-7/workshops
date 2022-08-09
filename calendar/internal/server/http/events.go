@@ -3,6 +3,7 @@ package http
 import (
 	"fmt"
 	"github.com/Roma7-7-7/workshops/calendar/api"
+	"github.com/Roma7-7-7/workshops/calendar/internal/middleware/auth"
 	"github.com/Roma7-7-7/workshops/calendar/internal/models"
 	"github.com/Roma7-7-7/workshops/calendar/internal/services/validator"
 	"github.com/gin-gonic/gin"
@@ -24,8 +25,11 @@ func (s *Server) GetEvents(c *gin.Context) {
 		api.BadRequestA(c, err)
 		return
 	}
+	if req.Timezone == "" {
+		req.Timezone = auth.GetContext(c).UserTimezone()
+	}
 
-	events, err := s.service.GetEvents(req.Title, req.DateFrom, req.TimeFrom, req.DateTo, req.TimeTo, req.Timezone)
+	events, err := s.service.GetEvents(auth.GetContext(c).Username(), req.Title, req.DateFrom, req.TimeFrom, req.DateTo, req.TimeTo, req.Timezone)
 	if err != nil {
 		log.Printf("get events: %v\n", err)
 		api.ServerErrorA(c, err)
@@ -41,6 +45,7 @@ func (s *Server) GetEvents(c *gin.Context) {
 
 func (s *Server) GetEvent(c *gin.Context) {
 	id := c.Param("id")
+	//TODO: validate if event belongs to user
 	event, err := s.service.GetEvent(id)
 	if err != nil {
 		log.Printf("get event: %v", err)

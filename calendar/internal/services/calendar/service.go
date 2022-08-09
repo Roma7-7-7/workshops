@@ -32,26 +32,55 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) GetEvents(title, dateFrom, timeFrom, dateTo, timeTo, timezone string) ([]*models.Event, error) {
-	if timezone != "" {
-		if dateFrom != "" {
-			convertedDate, convertedTime, err := normalizeDateTime(dateFrom, timeFrom, timezone)
-			if err != nil {
-				return nil, fmt.Errorf("convert date=\"%s\" time=\"%s\" to timezone=\"%s\": %v", dateFrom, timeFrom, timezone, err)
-			}
-			dateFrom = convertedDate
-			timeFrom = convertedTime
+func (s *Service) GetEvents(username, title, dateFrom, timeFrom, dateTo, timeTo, timezone string) ([]*models.Event, error) {
+	user, err := s.repo.GetUser(username)
+	if err != nil {
+		return nil, err
+	}
+	userTimezone := user.Timezone
+
+	if timezone == "" {
+		timezone = userTimezone
+	}
+
+	if dateFrom != "" {
+		if timeFrom == "" {
+			timeFrom = "00:00"
 		}
-		if dateTo != "" {
-			convertedDate, convertedTime, err := normalizeDateTime(dateTo, timeTo, timezone)
-			if err != nil {
-				return nil, fmt.Errorf("convert date=\"%s\" time=\"%s\" to timezone=\"%s\": %v", dateTo, timeTo, timezone, err)
-			}
-			dateTo = convertedDate
-			timeTo = convertedTime
+		convertedDate, convertedTime, err := normalizeDateTime(dateFrom, timeFrom, timezone)
+		if err != nil {
+			return nil, fmt.Errorf("convert date=\"%s\" time=\"%s\" to timezone=\"%s\": %v", dateFrom, timeFrom, timezone, err)
+		}
+		dateFrom = convertedDate
+		timeFrom = convertedTime
+	}
+	if dateTo != "" {
+		if timeTo == "" {
+			timeTo = "23:59"
+		}
+		convertedDate, convertedTime, err := normalizeDateTime(dateTo, timeTo, timezone)
+		if err != nil {
+			return nil, fmt.Errorf("convert date=\"%s\" time=\"%s\" to timezone=\"%s\": %v", dateTo, timeTo, timezone, err)
+		}
+		dateTo = convertedDate
+		timeTo = convertedTime
+	}
+
+	events, err := s.repo.GetEvents(title, dateFrom, timeFrom, dateTo, timeTo)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*models.Event, 0, len(events))
+	for _, e := range events {
+		if conv, err := e.WithTimezone(userTimezone); err != nil {
+			return nil, fmt.Errorf("convert event with ID=\"%s\" to timezone=\"%s\": %v", e.ID, timezone, err)
+		} else {
+			res = append(res, conv)
 		}
 	}
-	return s.repo.GetEvents(title, dateFrom, timeFrom, dateTo, timeTo)
+
+	return res, err
 }
 
 func (s *Service) GetEvent(id string) (*models.Event, error) {

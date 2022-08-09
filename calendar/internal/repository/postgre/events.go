@@ -28,7 +28,7 @@ func (r *Repository) GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string)
 		filters = append(filters, sq.GtOrEq{"timestamp_to::time": timeTo})
 	}
 
-	q := psql.Select("id", "title", "description", "timestamp_from", "timestamp_to", "notes").From("event")
+	q := psql.Select("id", "title", "description", "timestamp_from", "timestamp_to", "notes").From("event").OrderBy("timestamp_from")
 	if len(filters) > 0 {
 		q = q.Where(filters)
 	}
