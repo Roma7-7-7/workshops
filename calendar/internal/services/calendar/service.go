@@ -20,6 +20,7 @@ type Repository interface {
 	DeleteEvent(id string) (bool, error)
 	// Users
 	GetUser(username string) (*models.User, error)
+	UpdateUserTimezone(username, timezone string) (*models.User, error)
 }
 
 // Service holds calendar business logic and works with repository
@@ -81,6 +82,10 @@ func (s *Service) UpdateEvent(id, title, description, timeVal, timezone string, 
 
 func (s *Service) DeleteEvent(id string) (bool, error) {
 	return s.repo.DeleteEvent(id)
+}
+
+func (s *Service) UpdateUserTimezone(username, timezone string) (*models.User, error) {
+	return s.repo.UpdateUserTimezone(username, timezone)
 }
 
 func timeFromTo(timeVal, timezone string, duration time.Duration) (*time.Time, *time.Time, error) {

@@ -22,6 +22,12 @@ func BadRequestA(c *gin.Context, err error) {
 	})
 }
 
+func Forbidden(c *gin.Context, msg string) {
+	c.AbortWithStatusJSON(http.StatusForbidden, GenericResponse{
+		Message: msg,
+	})
+}
+
 func NotFoundA(c *gin.Context, entity string) {
 	c.AbortWithStatusJSON(http.StatusNotFound, GenericResponse{
 		Message: fmt.Sprintf("%s not found", entity),

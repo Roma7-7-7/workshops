@@ -19,11 +19,15 @@ type Middleware struct {
 	secret string
 }
 
-const ContextKey = "auth"
+const сontextKey = "auth"
 
 type Context struct {
 	JWT      *jwt.RegisteredClaims
 	Username string
+}
+
+func GetContext(c *gin.Context) *Context {
+	return c.MustGet(сontextKey).(*Context)
 }
 
 func (m *Middleware) Login(c *gin.Context) {
@@ -84,12 +88,14 @@ func (m *Middleware) Validate(c *gin.Context) {
 	}
 
 	cl := &jwt.RegisteredClaims{}
-	token, err := jwt.ParseWithClaims(tokenS, cl, m.keyFunc)
-	if err != nil {
+	if _, err = jwt.ParseWithClaims(tokenS, cl, m.keyFunc); err != nil {
 		api.ServerErrorA(c, err)
 		return
 	}
-	c.Set(ContextKey, token)
+	c.Set(сontextKey, &Context{
+		JWT:      cl,
+		Username: cl.Subject,
+	})
 }
 
 func (m *Middleware) keyFunc(token *jwt.Token) (interface{}, error) {

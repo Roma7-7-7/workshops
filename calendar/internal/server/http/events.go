@@ -20,7 +20,7 @@ func (s *Server) GetEvents(c *gin.Context) {
 		DateTo:   c.Query("dateTo"),
 		TimeTo:   c.Query("timeTo"),
 	}
-	if err := s.valid.Validate(req); err != nil {
+	if err := s.valid.Validate(&req); err != nil {
 		api.BadRequestA(c, err)
 		return
 	}
@@ -34,7 +34,7 @@ func (s *Server) GetEvents(c *gin.Context) {
 
 	result := make([]*api.Event, len(events))
 	for i, e := range events {
-		result[i] = toApi(e)
+		result[i] = eventToApi(e)
 	}
 	c.JSON(http.StatusOK, result)
 }
@@ -57,7 +57,7 @@ func (s *Server) GetEvent(c *gin.Context) {
 func (s *Server) PostEvent(c *gin.Context) {
 	var req validator.CreateEvent
 	c.BindJSON(&req)
-	if err := s.valid.Validate(req); err != nil {
+	if err := s.valid.Validate(&req); err != nil {
 		api.BadRequestA(c, err)
 		return
 	}
@@ -69,7 +69,7 @@ func (s *Server) PostEvent(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toApi(e))
+	c.JSON(http.StatusOK, eventToApi(e))
 }
 
 func (s *Server) PutEvent(c *gin.Context) {
@@ -77,7 +77,7 @@ func (s *Server) PutEvent(c *gin.Context) {
 	var req validator.UpdateEvent
 	c.BindJSON(&req)
 	req.Id = id
-	if err := s.valid.Validate(req); err != nil {
+	if err := s.valid.Validate(&req); err != nil {
 		api.BadRequestA(c, err)
 		return
 	}
@@ -93,7 +93,7 @@ func (s *Server) PutEvent(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, toApi(e))
+	c.JSON(http.StatusOK, eventToApi(e))
 }
 
 func (s *Server) DeleteEvent(c *gin.Context) {
@@ -119,7 +119,7 @@ func (s *Server) registerEvents(group *gin.RouterGroup) {
 	group.DELETE("/:id", s.DeleteEvent)
 }
 
-func toApi(e *models.Event) *api.Event {
+func eventToApi(e *models.Event) *api.Event {
 	var tz string
 	if l := e.TimeFrom.Location(); l == nil {
 		tz = "UTC"

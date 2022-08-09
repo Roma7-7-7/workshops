@@ -35,3 +35,19 @@ func (r *Repository) CreateUser(name string, password string, timezone string) (
 
 	return &user, nil
 }
+
+func (r *Repository) UpdateUserTimezone(name string, timezone string) (*models.User, error) {
+	var user models.User
+	err := psql.Update("users").
+		Set("timezone", timezone).
+		Where(sq.Eq{"name": name}).
+		Suffix("RETURNING name, password, timezone").
+		RunWith(r.db).
+		QueryRow().
+		Scan(&user.Name, &user.Password, &user.Timezone)
+	if err != nil {
+		return nil, fmt.Errorf("update user timezone: %v", err)
+	}
+
+	return &user, nil
+}
