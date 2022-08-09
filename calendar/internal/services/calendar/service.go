@@ -139,7 +139,7 @@ func timeFromTo(timeVal, timezone string, duration time.Duration) (*time.Time, *
 	return &timeFrom, &timeTo, nil
 }
 
-var systemLocation = time.Local
+var dbLocation = time.Local
 
 func normalizeDateTime(date string, timev string, timezone string) (string, string, error) {
 	if date == "" && timev == "" {
@@ -160,7 +160,7 @@ func normalizeDateTime(date string, timev string, timezone string) (string, stri
 	if err != nil {
 		return "", "", fmt.Errorf("convert datetime=\"%s\": %v", dateTime, err)
 	}
-	converted := zoned.In(systemLocation)
+	converted := zoned.In(dbLocation)
 
 	return converted.Format(DateLayout), converted.Format(TimeLayout), nil
 }
