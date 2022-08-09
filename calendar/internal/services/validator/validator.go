@@ -32,7 +32,7 @@ type CreateEvent struct {
 }
 
 type UpdateEvent struct {
-	Id          string   `json:"id"`
+	ID          string   `json:"id"`
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Time        string   `json:"time"`
@@ -71,7 +71,7 @@ func (s *Service) Validate(v interface{}) error {
 	case *CreateEvent:
 		errors = validateEventModification(errors, t.Title, t.Time, t.Timezone, t.Duration)
 	case *UpdateEvent:
-		if strings.TrimSpace(t.Id) == "" {
+		if strings.TrimSpace(t.ID) == "" {
 			errors = append(errors, "id must not be blank")
 		}
 		errors = validateEventModification(errors, t.Title, t.Time, t.Timezone, t.Duration)

@@ -1,6 +1,7 @@
 package postgre
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
@@ -9,7 +10,7 @@ import (
 	"time"
 )
 
-func (r *Repository) GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string) ([]*models.Event, error) {
+func (r *Repository) GetEvents(username string, title, dateFrom, timeFrom, dateTo, timeTo string) ([]*models.Event, error) {
 	filters := sq.And{}
 
 	if title != "" {
@@ -27,11 +28,13 @@ func (r *Repository) GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string)
 	if timeTo != "" {
 		filters = append(filters, sq.GtOrEq{"timestamp_to::time": timeTo})
 	}
+	filters = append(filters, sq.Eq{"user_event.username": username})
 
-	q := psql.Select("id", "title", "description", "timestamp_from", "timestamp_to", "notes").From("event").OrderBy("timestamp_from")
-	if len(filters) > 0 {
-		q = q.Where(filters)
-	}
+	q := psql.Select("id", "title", "description", "timestamp_from", "timestamp_to", "notes").
+		From("event").
+		InnerJoin("user_event ON user_event.event_id = event.id").
+		OrderBy("timestamp_from").
+		Where(filters)
 
 	query, args, err := q.ToSql()
 	if err != nil {
@@ -40,7 +43,11 @@ func (r *Repository) GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string)
 
 	var rows *sql.Rows
 	rows, err = r.db.Query(query, args...)
-	defer rows.Close()
+	defer func() {
+		if rows != nil {
+			rows.Close()
+		}
+	}()
 
 	if err != nil {
 		return nil, fmt.Errorf(`querying with sql="%s": %v`, query, err)
@@ -85,18 +92,32 @@ func (r *Repository) EventExists(id string) (bool, error) {
 	return count > 0, nil
 }
 
-func (r *Repository) CreateEvent(title string, description string, from time.Time, to time.Time, notes []string) (*models.Event, error) {
+func (r *Repository) CreateEvent(username string, title string, description string, from time.Time, to time.Time, notes []string) (*models.Event, error) {
+	tx, err := r.db.BeginTx(context.Background(), &sql.TxOptions{Isolation: sql.LevelReadUncommitted})
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %v", err)
+	}
+	defer tx.Rollback()
+
 	query := psql.Insert("event").
 		Columns("id", "title", "description", "timestamp_from", "timestamp_to", "notes").
 		Values(sq.Expr("gen_random_uuid()"), title, description, from, to, pq.Array(notes)).
 		Suffix("RETURNING id, title, description, timestamp_from, timestamp_to, notes").
-		RunWith(r.db)
+		RunWith(tx)
 
 	var event models.Event
 
-	err := query.QueryRow().Scan(&event.ID, &event.Title, &event.Description, &event.TimeFrom, &event.TimeTo, pq.Array(&event.Notes))
+	err = query.QueryRow().Scan(&event.ID, &event.Title, &event.Description, &event.TimeFrom, &event.TimeTo, pq.Array(&event.Notes))
 	if err != nil {
 		return nil, fmt.Errorf("insert event: %v", err)
+	}
+
+	_, err = psql.Insert("user_event").Columns("event_id", "username").Values(event.ID, username).RunWith(tx).Exec()
+	if err != nil {
+		return nil, fmt.Errorf("insert user event: %v", err)
+	}
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit transaction: %v", err)
 	}
 
 	return &event, nil
@@ -124,11 +145,25 @@ func (r *Repository) UpdateEvent(id, title, description string, from time.Time, 
 }
 
 func (r *Repository) DeleteEvent(id string) (bool, error) {
-	if res, err := psql.Delete("event").Where(sq.Eq{"id": id}).RunWith(r.db).Exec(); err != nil {
+	tx, err := r.db.BeginTx(context.Background(), &sql.TxOptions{Isolation: sql.LevelReadUncommitted})
+	if err != nil {
+		return false, fmt.Errorf("begin transaction: %v", err)
+	}
+	defer tx.Rollback()
+	if _, err := psql.Delete("user_event").Where(sq.Eq{"event_id": id}).RunWith(tx).Exec(); err != nil {
+		return false, fmt.Errorf("delete user event: %v", err)
+	}
+	if res, err := psql.Delete("event").
+		Where(sq.Eq{"id": id}).
+		RunWith(tx).Exec(); err != nil {
 		return false, fmt.Errorf("delete event: %v", err)
 	} else if count, err := res.RowsAffected(); err != nil {
 		return false, fmt.Errorf("delete event: %v", err)
 	} else {
+		err = tx.Commit()
+		if err != nil {
+			return false, fmt.Errorf("commit transaction: %v", err)
+		}
 		return count > 0, nil
 	}
 }

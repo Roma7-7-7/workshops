@@ -45,17 +45,17 @@ func (s *Server) GetEvents(c *gin.Context) {
 
 func (s *Server) GetEvent(c *gin.Context) {
 	id := c.Param("id")
-	//TODO: validate if event belongs to user
+	if !s.validateOwner(c, id) {
+		return
+	}
+
 	event, err := s.service.GetEvent(id)
 	if err != nil {
 		log.Printf("get event: %v", err)
 		api.ServerErrorA(c, err)
 		return
 	}
-	if event == nil {
-		api.NotFoundA(c, fmt.Sprintf("event with id=\"%s\"", id))
-		return
-	}
+
 	c.JSON(http.StatusOK, event)
 }
 
@@ -67,7 +67,7 @@ func (s *Server) PostEvent(c *gin.Context) {
 		return
 	}
 
-	e, err := s.service.CreateEvent(req.Title, req.Description, req.Time, req.Timezone, time.Duration(req.Duration)*time.Minute, req.Notes)
+	e, err := s.service.CreateEvent(auth.GetContext(c).Username(), req.Title, req.Description, req.Time, req.Timezone, time.Duration(req.Duration)*time.Minute, req.Notes)
 	if err != nil {
 		log.Printf("create event: %v\n", err)
 		api.ServerErrorA(c, err)
@@ -81,20 +81,19 @@ func (s *Server) PutEvent(c *gin.Context) {
 	id := c.Param("id")
 	var req validator.UpdateEvent
 	c.BindJSON(&req)
-	req.Id = id
+	req.ID = id
+
 	if err := s.valid.Validate(&req); err != nil {
 		api.BadRequestA(c, err)
 		return
+	} else if !s.validateOwner(c, req.ID) {
+		return
 	}
 
-	e, err := s.service.UpdateEvent(req.Id, req.Title, req.Description, req.Time, req.Timezone, time.Duration(req.Duration)*time.Minute, req.Notes)
+	e, err := s.service.UpdateEvent(req.ID, req.Title, req.Description, req.Time, req.Timezone, time.Duration(req.Duration)*time.Minute, req.Notes)
 	if err != nil {
 		log.Printf("update event: %v\n", err)
 		api.ServerErrorA(c, err)
-		return
-	}
-	if e == nil {
-		api.NotFoundA(c, fmt.Sprintf("event with id=\"%s\"", id))
 		return
 	}
 
@@ -103,12 +102,14 @@ func (s *Server) PutEvent(c *gin.Context) {
 
 func (s *Server) DeleteEvent(c *gin.Context) {
 	id := c.Param("id")
-	if ok, err := s.service.DeleteEvent(id); err != nil {
+
+	if !s.validateOwner(c, id) {
+		return
+	}
+
+	if _, err := s.service.DeleteEvent(id); err != nil {
 		log.Printf("delete event: %v\n", err)
 		api.ServerErrorA(c, err)
-		return
-	} else if !ok {
-		api.NotFoundA(c, fmt.Sprintf("event with id=\"%s\"", id))
 		return
 	} else {
 		c.AbortWithStatus(http.StatusOK)
@@ -140,4 +141,19 @@ func eventToApi(e *models.Event) *api.Event {
 		Duration:    int(e.TimeTo.Sub(e.TimeFrom).Minutes()),
 		Notes:       e.Notes,
 	}
+}
+
+func (s *Server) validateOwner(c *gin.Context, eventId string) bool {
+	if owner, err := s.service.GetEventOwner(eventId); err != nil {
+		log.Printf("get owner of event with ID=\"%s\": %v", eventId, err)
+		api.ServerErrorA(c, err)
+		return false
+	} else if owner == "" {
+		api.NotFoundA(c, fmt.Sprintf("event with ID=\"%s\"", eventId))
+		return false
+	} else if owner != auth.GetContext(c).Username() {
+		api.ForbiddenA(c, fmt.Sprintf("event with ID=\"%s\"", eventId))
+		return false
+	}
+	return true
 }

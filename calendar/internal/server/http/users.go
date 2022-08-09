@@ -22,7 +22,7 @@ func (s *Server) UpdateUserTimezone(c *gin.Context) {
 
 	user := auth.GetContext(c).Username()
 	if user != req.Username {
-		api.Forbidden(c, "You are not allowed to update this user")
+		api.ForbiddenA(c, "You are not allowed to update this user")
 		return
 	}
 

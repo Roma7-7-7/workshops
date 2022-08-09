@@ -22,7 +22,7 @@ func BadRequestA(c *gin.Context, err error) {
 	})
 }
 
-func Forbidden(c *gin.Context, msg string) {
+func ForbiddenA(c *gin.Context, msg string) {
 	c.AbortWithStatusJSON(http.StatusForbidden, GenericResponse{
 		Message: msg,
 	})

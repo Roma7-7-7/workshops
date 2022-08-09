@@ -12,15 +12,17 @@ const TimeLayout = "15:04"
 
 type Repository interface {
 	// Events
-	GetEvents(title, dateFrom, timeFrom, dateTo, timeTo string) ([]*models.Event, error)
+	GetEvents(username, title, dateFrom, timeFrom, dateTo, timeTo string) ([]*models.Event, error)
 	GetEvent(id string) (*models.Event, error)
 	EventExists(id string) (bool, error)
-	CreateEvent(title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
+	CreateEvent(username string, title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
 	UpdateEvent(id, title, description string, from time.Time, to time.Time, notes []string) (*models.Event, error)
 	DeleteEvent(id string) (bool, error)
 	// Users
 	GetUser(username string) (*models.User, error)
 	UpdateUserTimezone(username, timezone string) (*models.User, error)
+	// User's event
+	GetEventOwner(eventId string) (string, error)
 }
 
 // Service holds calendar business logic and works with repository
@@ -66,7 +68,7 @@ func (s *Service) GetEvents(username, title, dateFrom, timeFrom, dateTo, timeTo,
 		timeTo = convertedTime
 	}
 
-	events, err := s.repo.GetEvents(title, dateFrom, timeFrom, dateTo, timeTo)
+	events, err := s.repo.GetEvents(username, title, dateFrom, timeFrom, dateTo, timeTo)
 	if err != nil {
 		return nil, err
 	}
@@ -87,12 +89,16 @@ func (s *Service) GetEvent(id string) (*models.Event, error) {
 	return s.repo.GetEvent(id)
 }
 
-func (s *Service) CreateEvent(title, description, timeVal, timezone string, duration time.Duration, notes []string) (*models.Event, error) {
+func (s *Service) GetEventOwner(id string) (string, error) {
+	return s.repo.GetEventOwner(id)
+}
+
+func (s *Service) CreateEvent(username string, title, description, timeVal, timezone string, duration time.Duration, notes []string) (*models.Event, error) {
 	timeFrom, timeTo, err := timeFromTo(timeVal, timezone, duration)
 	if err != nil {
 		return nil, err
 	}
-	return s.repo.CreateEvent(title, description, *timeFrom, *timeTo, notes)
+	return s.repo.CreateEvent(username, title, description, *timeFrom, *timeTo, notes)
 }
 
 func (s *Service) UpdateEvent(id, title, description, timeVal, timezone string, duration time.Duration, notes []string) (*models.Event, error) {
