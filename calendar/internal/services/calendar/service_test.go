@@ -134,6 +134,48 @@ func Test_GetEvents_UserTimezone(t *testing.T) {
 	assert.Equal(t, tt, events[0].TimeTo)
 }
 
+func Test_GetEvent(t *testing.T) {
+	now := time.Now()
+	mockedRepository := &RepositoryMock{
+		GetEventFunc: func(id string) (*models.Event, error) {
+			return &models.Event{ID: id, Title: "ET", Description: "ED", TimeFrom: now, TimeTo: now, Notes: []string{"note"}}, nil
+		},
+	}
+
+	service := NewService(mockedRepository)
+
+	event, err := service.GetEvent("EID")
+	assert.NoError(t, err)
+	assert.Equal(t, models.Event{
+		ID:          "EID",
+		Title:       "ET",
+		Description: "ED",
+		TimeFrom:    now,
+		TimeTo:      now,
+		Notes:       []string{"note"},
+	}, *event)
+}
+
+func Test_CreateEvent(t *testing.T) {
+	mockedRepository := &RepositoryMock{
+		CreateEventFunc: func(username string, title string, description string, from time.Time, to time.Time, notes []string) (*models.Event, error) {
+			return &models.Event{ID: "EID", Title: title, Description: description, TimeFrom: from, TimeTo: to, Notes: notes}, nil
+		},
+	}
+
+	event, err := NewService(mockedRepository).
+		CreateEvent("username", "title", "description", "2022-02-03 04:56", "UTC", 75*time.Minute, []string{"note"})
+	assert.NoError(t, err)
+	assert.Equal(t, models.Event{
+		ID:          "EID",
+		Title:       "title",
+		Description: "description",
+		TimeFrom:    time.Date(2022, time.February, 3, 4, 56, 0, 0, time.UTC),
+		TimeTo:      time.Date(2022, time.February, 3, 6, 11, 0, 0, time.UTC),
+		Notes:       []string{"note"},
+	}, *event)
+}
+
 func Test_timeFromTo_Errors(t *testing.T) {
 	var err error
 
