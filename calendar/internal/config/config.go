@@ -44,6 +44,7 @@ func initApplicationConfig() {
 	instance = &Application{
 		DB:     &Database{},
 		BCrypt: &BCrypt{},
+		JWT:    &JWT{},
 	}
 
 	if err := yaml.Unmarshal(configBytes(), instance); err != nil {
