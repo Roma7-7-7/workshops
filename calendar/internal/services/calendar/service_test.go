@@ -176,6 +176,42 @@ func Test_CreateEvent(t *testing.T) {
 	}, *event)
 }
 
+func Test_UpdateEvent(t *testing.T) {
+	mockRepository := &RepositoryMock{
+		UpdateEventFunc: func(id string, title string, description string, from time.Time, to time.Time, notes []string) (*models.Event, error) {
+			return &models.Event{ID: id, Title: title, Description: description, TimeFrom: from, TimeTo: to, Notes: notes}, nil
+		},
+		EventExistsFunc: func(id string) (bool, error) {
+			if id == "not_exist" {
+				return false, nil
+			} else if id == "exist_check_error" {
+				return false, errors.New("error")
+			}
+			return true, nil
+		},
+	}
+
+	service := NewService(mockRepository)
+
+	_, err := service.UpdateEvent("exist_check_error", "title", "description", "2022-02-03 04:56", "UTC", 75*time.Minute, []string{"note"})
+	assert.Error(t, err)
+
+	event, err := service.UpdateEvent("not_exist", "title", "description", "2022-02-03 04:56", "UTC", 75*time.Minute, []string{"note"})
+	assert.NoErrorf(t, err, "expected no error but actual %s", err)
+	assert.Nil(t, event)
+
+	event, err = service.UpdateEvent("exist", "title", "description", "2022-02-03 04:56", "UTC", 75*time.Minute, []string{"note"})
+	assert.NoError(t, err)
+	assert.Equal(t, models.Event{
+		ID:          "exist",
+		Title:       "title",
+		Description: "description",
+		TimeFrom:    time.Date(2022, time.February, 3, 4, 56, 0, 0, time.UTC),
+		TimeTo:      time.Date(2022, time.February, 3, 6, 11, 0, 0, time.UTC),
+		Notes:       []string{"note"},
+	}, *event)
+}
+
 func Test_timeFromTo_Errors(t *testing.T) {
 	var err error
 
