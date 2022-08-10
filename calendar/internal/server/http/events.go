@@ -74,7 +74,7 @@ func (s *Server) PostEvent(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, eventToApi(e))
+	c.JSON(http.StatusCreated, eventToApi(e))
 }
 
 func (s *Server) PutEvent(c *gin.Context) {

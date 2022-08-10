@@ -30,14 +30,12 @@ type Server struct {
 	service Service
 	valid   Validator
 	auth    Auth
-	secret  string
 }
 
-func NewServer(service Service, valid Validator, auth Auth, secret string) *Server {
+func NewServer(service Service, valid Validator, auth Auth) *Server {
 	return &Server{
 		service: service,
 		valid:   valid,
 		auth:    auth,
-		secret:  secret,
 	}
 }

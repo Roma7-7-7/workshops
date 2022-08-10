@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -47,7 +48,7 @@ func Test_GetEvents(t *testing.T) {
 			}
 		},
 	}
-	server := NewServer(service, validator, &AuthMock{}, "secret")
+	server := NewServer(service, validator, &AuthMock{})
 
 	w, c := authenticatedContext()
 
@@ -111,7 +112,7 @@ func Test_GetEvent(t *testing.T) {
 			}
 		},
 	}
-	server := NewServer(service, &ValidatorMock{}, &AuthMock{}, "secret")
+	server := NewServer(service, &ValidatorMock{}, &AuthMock{})
 
 	w, c := authenticatedContext()
 
@@ -156,6 +157,147 @@ func Test_GetEvent(t *testing.T) {
 	assert.Equal(t, `{"message":"get event error"}`, w.Body.String())
 }
 
+func Test_PostEvent(t *testing.T) {
+	validator := &ValidatorMock{
+		ValidateFunc: func(v interface{}) error { return fmt.Errorf("validation error") },
+	}
+	service := &ServiceMock{
+		CreateEventFunc: func(username string, title string, description string, timeVal string, timezone string, duration time.Duration, notes []string) (*models.Event, error) {
+			if title == "error" {
+				return nil, fmt.Errorf("create event error")
+			}
+
+			return &models.Event{
+				ID:          "id",
+				Title:       title,
+				Description: description,
+				TimeFrom:    time.Date(2022, time.March, 7, 5, 24, 0, 0, time.FixedZone("Europe/Kiev", 3*60*60)),
+				TimeTo:      time.Date(2022, time.March, 7, 12, 10, 0, 0, time.FixedZone("Europe/Kiev", 3*60*60)),
+				Notes:       notes,
+			}, nil
+		},
+	}
+	server := NewServer(service, validator, &AuthMock{})
+
+	// POST event -> validation error
+	w, c := authenticatedContext()
+	c.Request = httptest.NewRequest("POST", "/events", strings.NewReader(`{"title":"title","description":"desc","time":"2022-10-03 02:11","timezone":"UTC","duration":44,"notes":["note1","note2"]}`))
+	server.PostEvent(c)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, `{"message":"validation error"}`, w.Body.String())
+
+	validator.ValidateFunc = func(v interface{}) error { return nil }
+
+	// POST event -> create event error
+	w, c = authenticatedContext()
+	c.Request = httptest.NewRequest("POST", "/events", strings.NewReader(`{"title":"error","description":"desc","time":"2022-10-03 02:11","timezone":"UTC","duration":44,"notes":["note1","note2"]}`))
+	server.PostEvent(c)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, `{"message":"create event error"}`, w.Body.String())
+
+	// POST event -> happy path
+	w, c = authenticatedContext()
+	c.Request = httptest.NewRequest("POST", "/events", strings.NewReader(`{"title":"title","description":"desc","time":"2022-10-03 02:11","timezone":"UTC","duration":44,"notes":["note1"]}`))
+	server.PostEvent(c)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, `{"id":"id","title":"title","description":"desc","time":"2022-03-07 05:24","timezone":"Europe/Kiev","duration":406,"notes":["note1"]}`, w.Body.String())
+}
+
+func Test_PutEvent(t *testing.T) {
+	validator := &ValidatorMock{
+		ValidateFunc: func(v interface{}) error { return fmt.Errorf("validation error") },
+	}
+	service := &ServiceMock{
+		UpdateEventFunc: func(id string, title string, description string, timeVal string, timezone string, duration time.Duration, notes []string) (*models.Event, error) {
+			if id == "update_error" {
+				return nil, fmt.Errorf("update event error")
+			}
+
+			return &models.Event{
+				ID:          "id",
+				Title:       title,
+				Description: description,
+				TimeFrom:    time.Date(2022, time.March, 7, 5, 24, 0, 0, time.FixedZone("Europe/Kiev", 3*60*60)),
+				TimeTo:      time.Date(2022, time.March, 7, 12, 10, 0, 0, time.FixedZone("Europe/Kiev", 3*60*60)),
+				Notes:       notes,
+			}, nil
+		},
+		GetEventOwnerFunc: func(id string) (string, error) {
+			switch id {
+			case "owns", "update_error":
+				return contextUser, nil
+			case "not_owns":
+				return "other", nil
+			case "not_found":
+				return "", nil
+			case "own_check_error":
+				return "", fmt.Errorf("get owner error")
+			default:
+				panic("unexpected id=" + id)
+			}
+		},
+	}
+	server := NewServer(service, validator, &AuthMock{})
+
+	// PUT event -> validation error
+	w, c := authenticatedContext()
+	c.Request = httptest.NewRequest("PUT", "/event/id", strings.NewReader(`{"title":"title","description":"desc","time":"2022-10-03 02:11","timezone":"UTC","duration":44,"notes":["note1","note2"]}`))
+	c.Params = []gin.Param{{Key: "id", Value: "id"}}
+	server.PutEvent(c)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, `{"message":"validation error"}`, w.Body.String())
+
+	validator.ValidateFunc = func(v interface{}) error { return nil }
+
+	// PUT event -> update event error
+	w, c = authenticatedContext()
+	c.Request = httptest.NewRequest("PUT", "/event/id", strings.NewReader(`{"title":"error","description":"desc","time":"2022-10-03 02:11","timezone":"UTC","duration":44,"notes":["note1","note2"]}`))
+	c.Params = []gin.Param{{Key: "id", Value: "update_error"}}
+	server.PutEvent(c)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, `{"message":"update event error"}`, w.Body.String())
+
+	// PUT event -> owner check error
+	w, c = authenticatedContext()
+	c.Request = httptest.NewRequest("PUT", "/event/id", strings.NewReader(`{"title":"title","description":"desc","time":"2022-10-03 02:11","timezone":"UTC","duration":44,"notes":["note1","note2"]}`))
+	c.Params = []gin.Param{{Key: "id", Value: "own_check_error"}}
+	server.PutEvent(c)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, `{"message":"get owner error"}`, w.Body.String())
+
+	// PUT event -> does not own event
+	w, c = authenticatedContext()
+	c.Request = httptest.NewRequest("PUT", "/event/id", strings.NewReader(`{"title":"title","description":"desc","time":"2022-10-03 02:11","timezone":"UTC","duration":44,"notes":["note1","note2"]}`))
+	c.Params = []gin.Param{{Key: "id", Value: "not_owns"}}
+	server.PutEvent(c)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+	assert.Equal(t, `{"message":"event with ID=\"not_owns\" access denied"}`, w.Body.String())
+
+	// PUT event -> owner not found
+	w, c = authenticatedContext()
+	c.Request = httptest.NewRequest("PUT", "/event/not_found", strings.NewReader(`{"title":"title","description":"desc","time":"2022-10-03 02:11","timezone":"UTC","duration":44,"notes":["note1","note2"]}`))
+	c.Params = []gin.Param{{Key: "id", Value: "not_found"}}
+	server.PutEvent(c)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, `{"message":"event with ID=\"not_found\" not found"}`, w.Body.String())
+
+	// PUT event -> update error
+	w, c = authenticatedContext()
+	c.Request = httptest.NewRequest("PUT", "/event/id", strings.NewReader(`{"title":"title","description":"desc","time":"2022-10-03 02:11","timezone":"UTC","duration":44,"notes":["note1","note2"]}`))
+	c.Params = []gin.Param{{Key: "id", Value: "update_error"}}
+	server.PutEvent(c)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Equal(t, `{"message":"update event error"}`, w.Body.String())
+
+	// PUT event -> happy path
+	w, c = authenticatedContext()
+	c.Request = httptest.NewRequest("PUT", "/event/id", strings.NewReader(`{"title":"title","description":"desc","time":"2022-10-03 02:11","timezone":"UTC","duration":44,"notes":["note1","note2"]}`))
+	c.Params = []gin.Param{{Key: "id", Value: "owns"}}
+	server.PutEvent(c)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, `{"id":"id","title":"title","description":"desc","time":"2022-03-07 05:24","timezone":"Europe/Kiev","duration":406,"notes":["note1","note2"]}`, w.Body.String())
+}
+
 func Test_DeleteEvent(t *testing.T) {
 	service := &ServiceMock{
 		DeleteEventFunc: func(id string) (bool, error) {
@@ -179,7 +321,7 @@ func Test_DeleteEvent(t *testing.T) {
 			}
 		},
 	}
-	server := NewServer(service, &ValidatorMock{}, &AuthMock{}, "secret")
+	server := NewServer(service, &ValidatorMock{}, &AuthMock{})
 
 	w, c := authenticatedContext()
 
