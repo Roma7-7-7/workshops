@@ -15,7 +15,7 @@ func main() {
 	repo := postgre.NewRepository(cfg.DSN())
 	aut := auth.NewMiddleware(repo, cfg.BCrypt.Secret)
 	service := calendar.NewService(repo)
-	server := http.NewServer(service, aut, &validator.Service{}, cfg.JWT.Secret)
+	server := http.NewServer(service, &validator.Service{}, aut, cfg.JWT.Secret)
 
 	r := gin.Default()
 	server.Register(r)

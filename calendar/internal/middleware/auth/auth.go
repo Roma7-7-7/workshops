@@ -24,7 +24,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-const сontextKey = "auth"
+const ContextKey = "auth"
 
 type Context struct {
 	JWT *Claims
@@ -39,7 +39,7 @@ func (c *Context) UserTimezone() string {
 }
 
 func GetContext(c *gin.Context) *Context {
-	return c.MustGet(сontextKey).(*Context)
+	return c.MustGet(ContextKey).(*Context)
 }
 
 func (m *Middleware) Login(c *gin.Context) {
@@ -104,7 +104,7 @@ func (m *Middleware) Validate(c *gin.Context) {
 		api.ServerErrorA(c, err)
 		return
 	}
-	c.Set(сontextKey, &Context{
+	c.Set(ContextKey, &Context{
 		JWT: cl,
 	})
 }

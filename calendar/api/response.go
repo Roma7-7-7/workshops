@@ -7,7 +7,7 @@ import (
 )
 
 type GenericResponse struct {
-	Message string
+	Message string `json:"message"`
 }
 
 func UnauthorizedA(c *gin.Context, msg string) {
@@ -24,7 +24,7 @@ func BadRequestA(c *gin.Context, err error) {
 
 func ForbiddenA(c *gin.Context, msg string) {
 	c.AbortWithStatusJSON(http.StatusForbidden, GenericResponse{
-		Message: msg,
+		Message: fmt.Sprintf("%s access denied", msg),
 	})
 }
 

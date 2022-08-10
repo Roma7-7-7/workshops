@@ -56,7 +56,7 @@ func (s *Server) GetEvent(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, event)
+	c.JSON(http.StatusOK, eventToApi(event))
 }
 
 func (s *Server) PostEvent(c *gin.Context) {
