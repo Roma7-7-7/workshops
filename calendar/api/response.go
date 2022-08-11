@@ -22,6 +22,12 @@ func BadRequestA(c *gin.Context, err error) {
 	})
 }
 
+func BadJSONA(c *gin.Context) {
+	c.AbortWithStatusJSON(http.StatusBadRequest, GenericResponse{
+		Message: "failed to parse request body",
+	})
+}
+
 func ForbiddenA(c *gin.Context, msg string) {
 	c.AbortWithStatusJSON(http.StatusForbidden, GenericResponse{
 		Message: fmt.Sprintf("%s access denied", msg),

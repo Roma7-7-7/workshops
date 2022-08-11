@@ -44,7 +44,7 @@ func Test_UpdateUserTimezone(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodPut, "/user", strings.NewReader(`non json payload`))
 	server.UpdateUserTimezone(c)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, `{"message":"invalid request"}`, w.Body.String())
+	assert.Equal(t, `{"message":"failed to parse request body"}`, w.Body.String())
 
 	// PUT user -> forbidden
 	w, c = authenticatedContext()

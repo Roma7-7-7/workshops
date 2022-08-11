@@ -11,7 +11,7 @@ import (
 func (s *Server) UpdateUserTimezone(c *gin.Context) {
 	var req api.UserTimezone
 	if err := c.BindJSON(&req); err != nil {
-		api.BadRequestA(c, err)
+		api.BadJSONA(c)
 		return
 	}
 

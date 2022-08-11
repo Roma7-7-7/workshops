@@ -62,7 +62,7 @@ func (s *Server) GetEvent(c *gin.Context) {
 func (s *Server) PostEvent(c *gin.Context) {
 	var req validator.CreateEvent
 	if err := c.BindJSON(&req); err != nil {
-		api.BadRequestA(c, err)
+		api.BadJSONA(c)
 		return
 	}
 	if err := s.valid.Validate(&req); err != nil {
@@ -84,7 +84,7 @@ func (s *Server) PutEvent(c *gin.Context) {
 	id := c.Param("id")
 	var req validator.UpdateEvent
 	if err := c.BindJSON(&req); err != nil {
-		api.BadRequestA(c, err)
+		api.BadJSONA(c)
 		return
 	}
 	req.ID = id

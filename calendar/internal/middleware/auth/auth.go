@@ -45,7 +45,7 @@ func GetContext(c *gin.Context) *Context {
 func (m *Middleware) Login(c *gin.Context) {
 	var req api.UserPassword
 	if err := c.BindJSON(&req); err != nil {
-		api.ServerErrorA(c, err)
+		api.BadJSONA(c)
 		return
 	}
 	u, err := m.repo.GetUser(req.Username)
