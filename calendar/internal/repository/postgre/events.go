@@ -23,10 +23,10 @@ func (r *Repository) GetEvents(username string, title, dateFrom, timeFrom, dateT
 		filters = append(filters, sq.GtOrEq{"timestamp_from::time": timeFrom})
 	}
 	if dateTo != "" {
-		filters = append(filters, sq.GtOrEq{"timestamp_to::date": dateTo})
+		filters = append(filters, sq.LtOrEq{"timestamp_to::date": dateTo})
 	}
 	if timeTo != "" {
-		filters = append(filters, sq.GtOrEq{"timestamp_to::time": timeTo})
+		filters = append(filters, sq.LtOrEq{"timestamp_to::time": timeTo})
 	}
 	filters = append(filters, sq.Eq{"user_event.username": username})
 
