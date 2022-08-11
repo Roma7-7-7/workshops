@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
-	"time"
 )
 
 func (s *TestSuite) Test_GetEvents() {
@@ -97,6 +96,10 @@ func (s *TestSuite) Test_EventExists() {
 	exists, err = s.repo.EventExists("other")
 	require.NoError(s.T(), err, "event exists")
 	assert.False(s.T(), exists)
+
+	event, err = s.repo.CreateEvent("non_existing", "t1", "d1", s.dateTime("2022-08-11 11:00"), s.dateTime("2022-08-21 18:00"), []string{"n1", "n2", "n3"})
+	assert.Nil(s.T(), event)
+	assert.Error(s.T(), err)
 }
 
 func (s *TestSuite) Test_CreateEvent() {
@@ -160,10 +163,4 @@ func assertEventsSlice(t *testing.T, events []*models.Event, titles ...string) {
 			assert.Equalf(t, title, events[i].Title, "title %d to be %s but is %s", i, title, events[i].Title)
 		}
 	}
-}
-
-func (s *TestSuite) dateTime(val string) time.Time {
-	res, err := time.ParseInLocation("2006-01-02 15:04", val, time.Local)
-	require.NoErrorf(s.T(), err, "parse %s", val)
-	return res
 }

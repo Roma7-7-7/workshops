@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"testing"
+	"time"
 )
 
 const userName = "user"
@@ -47,6 +48,12 @@ func (s *TestSuite) SetupTest() {
 func (s *TestSuite) TearDownSuite() {
 	s.cleanup(true)
 	_ = s.repo.db.Close()
+}
+
+func (s *TestSuite) dateTime(val string) time.Time {
+	res, err := time.ParseInLocation("2006-01-02 15:04", val, time.Local)
+	require.NoErrorf(s.T(), err, "parse %s", val)
+	return res
 }
 
 func Test_PostgreTestSuite(t *testing.T) {
