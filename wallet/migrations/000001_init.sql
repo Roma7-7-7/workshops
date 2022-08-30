@@ -1,7 +1,8 @@
 create table if not exists users
 (
-    id      uuid primary key default gen_random_uuid(),
-    token   text
+    id       uuid        primary key default gen_random_uuid(),
+    name     varchar(30) not null,
+    password varchar(60) not null
 );
 
 create unique index if not exists users_id_uindex
@@ -64,5 +65,5 @@ create unique index if not exists transactions_id_uindex
     on transactions (id);
 
 
-INSERT INTO users (id) VALUES ('66aeb414-335a-4d1d-9dd9-6622b9c179a9');
+INSERT INTO users (id, name, password) VALUES ('66aeb414-335a-4d1d-9dd9-6622b9c179a9', 'fee', '$2a$12$VmsbQfnSkXqp8sFZDjY1culIiyLfc.HJI7L4pPzMIUTIkk5iggr22');
 INSERT INTO wallets (id, balance, user_id) VALUES ('85aa7525-4fdb-4436-a600-66ffc55e0f65', 0, '66aeb414-335a-4d1d-9dd9-6622b9c179a9');
