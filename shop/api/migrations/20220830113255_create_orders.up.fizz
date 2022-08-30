@@ -1,0 +1,6 @@
+create_table("orders") {
+	t.Column("id", "integer", {primary: true})
+	t.Column("status", "string", {})
+	t.Column("sum", "integer", {})
+	t.Timestamps()
+}

@@ -1,0 +1,8 @@
+create_table("ordereds") {
+	t.Column("id", "integer", {primary: true})
+	t.Column("order_id", "integer", {})
+	t.Column("item_id", "uuid", {})
+	t.Column("item_cnt", "integer", {})
+	t.Column("item_sum", "integer", {})
+	t.Timestamps()
+}
