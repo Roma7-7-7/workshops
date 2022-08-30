@@ -1,10 +1,8 @@
 package http
 
 import (
-	"errors"
-	"github.com/Roma7-7-7/workshops/wallet/api"
+	"github.com/Roma7-7-7/workshops/wallet/internal/models"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 type Validator interface {
@@ -12,6 +10,8 @@ type Validator interface {
 }
 
 type Service interface {
+	GetUsers(limit uint64, offset uint64) ([]*models.User, error)
+	CreateUser(name string, password string) (*models.User, error)
 }
 
 type Auth interface {
@@ -32,17 +32,4 @@ func NewServer(service Service, valid Validator, auth Auth) *Server {
 		valid:   valid,
 		auth:    auth,
 	}
-}
-
-func (s *Server) Register(app *gin.Engine) {
-	app.Use(gin.CustomRecovery(recoveryHandler))
-
-	app.POST("/login", s.auth.Login)
-	app.GET("/logout", s.auth.Logout)
-
-}
-
-func recoveryHandler(c *gin.Context, err interface{}) {
-	zap.L().Error("unexpected panic", zap.Any("panic", err))
-	api.ServerErrorA(c, errors.New("unexpected error occurred"))
 }

@@ -46,6 +46,13 @@ func NotFoundA(c *gin.Context, entity string) {
 	})
 }
 
+func ConflictA(c *gin.Context, msg string) {
+	c.AbortWithStatusJSON(http.StatusConflict, GenericResponse{
+		Code:    http.StatusConflict,
+		Message: msg,
+	})
+}
+
 func ServerErrorA(c *gin.Context, err error) {
 	c.AbortWithStatusJSON(http.StatusInternalServerError, GenericResponse{
 		Code:    http.StatusInternalServerError,
