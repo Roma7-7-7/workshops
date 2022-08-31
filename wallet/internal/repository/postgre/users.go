@@ -3,14 +3,32 @@ package postgre
 import (
 	"database/sql"
 	"fmt"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/Roma7-7-7/workshops/wallet/internal/models"
 )
+
+func (r *Repository) GetUserByName(name string) (*models.User, error) {
+	var user models.User
+	err := psql.Select("id", "name", "password").
+		From("users").
+		Where(sq.Eq{"name": name}).
+		RunWith(r.db).
+		QueryRow().
+		Scan(&user.ID, &user.Name, &user.Password)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("get user: %v", err)
+	}
+	return &user, nil
+}
 
 func (r *Repository) GetUsers(limit uint64, offset uint64) ([]*models.User, error) {
 	q := psql.Select("id", "name", "password").
 		From("users").
 		Limit(limit).
-		Offset(offset)
+		Offset(offset).
+		OrderBy("name")
 
 	query, args, err := q.ToSql()
 	if err != nil {

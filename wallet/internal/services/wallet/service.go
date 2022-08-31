@@ -10,6 +10,11 @@ type Repository interface {
 	GetUserByName(name string) (*models.User, error)
 	GetUsers(limit uint64, offset uint64) ([]*models.User, error)
 	CreateUser(name string, password string) (*models.User, error)
+
+	CreateWallet(userId string, balance models.Amount) (*models.Wallet, error)
+	GetWalletOwner(id string) (string, error)
+	GetWalletById(id string) (*models.Wallet, error)
+	GetWalletTransactionsU(id string) (*models.Wallet, []*models.UserTransaction, error)
 }
 
 // Service holds wallet business logic and works with repository
@@ -35,4 +40,20 @@ func (s *Service) CreateUser(name string, password string) (*models.User, error)
 	}
 
 	return s.repo.CreateUser(name, password)
+}
+
+func (s *Service) CreateWallet(userId string, balance models.Amount) (*models.Wallet, error) {
+	return s.repo.CreateWallet(userId, balance)
+}
+
+func (s *Service) GetWalletById(id string) (*models.Wallet, error) {
+	return s.repo.GetWalletById(id)
+}
+
+func (s *Service) GetWalletTransactionsU(id string) (*models.Wallet, []*models.UserTransaction, error) {
+	return s.repo.GetWalletTransactionsU(id)
+}
+
+func (s *Service) GetWalletOwner(id string) (string, error) {
+	return s.repo.GetWalletOwner(id)
 }

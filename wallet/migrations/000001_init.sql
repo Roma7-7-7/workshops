@@ -28,16 +28,7 @@ create table if not exists transactions
     type             smallint  not null,
     fee_amount       bigint    not null,
     fee_wallet_id    uuid      not null,
-    credit_user_id   uuid      not null,
-    debit_user_id    uuid      not null,
 
-
-    constraint transactions_users_id_fk
-        foreign key (credit_user_id) references users
-            on update cascade on delete cascade,
-    constraint transactions_users_id_fk_2
-        foreign key (debit_user_id) references users
-            on update cascade on delete cascade,
     constraint transactions_wallets_address_fk
         foreign key (credit_wallet_id) references wallets
             on update cascade on delete cascade,

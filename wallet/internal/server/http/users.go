@@ -37,7 +37,7 @@ func (s *Server) GetUsers(c *gin.Context) {
 
 func (s *Server) PostUser(c *gin.Context) {
 	req := &validator.CreateUser{}
-	if err := c.BindJSON(req); err != nil {
+	if err := c.ShouldBindJSON(req); err != nil {
 		api.BadJSONA(c)
 		return
 	}

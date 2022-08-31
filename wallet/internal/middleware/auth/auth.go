@@ -30,7 +30,7 @@ type Context struct {
 	JWT *Claims
 }
 
-func (c *Context) Username() string {
+func (c *Context) UserID() string {
 	return c.JWT.Subject
 }
 
@@ -44,7 +44,7 @@ func GetContext(c *gin.Context) *Context {
 
 func (m *Middleware) Login(c *gin.Context) {
 	var req api.UserPassword
-	if err := c.BindJSON(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		api.BadJSONA(c)
 		return
 	}
@@ -71,7 +71,7 @@ func (m *Middleware) Login(c *gin.Context) {
 	expires := now.Add(jwtAliveDuration)
 	claims := &jwt.RegisteredClaims{
 		Issuer:    "wallet-app",
-		Subject:   req.Name,
+		Subject:   u.ID,
 		ExpiresAt: jwt.NewNumericDate(expires),
 		IssuedAt:  jwt.NewNumericDate(now),
 	}

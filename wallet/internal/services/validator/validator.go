@@ -2,7 +2,9 @@ package validator
 
 import (
 	"fmt"
+	"github.com/Roma7-7-7/workshops/wallet/internal/models"
 	"go.uber.org/zap"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -19,6 +21,49 @@ type GetUsers struct {
 type CreateUser struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
+}
+
+type CreateWallet struct {
+	Balance string `json:"balance"`
+}
+
+func (s *Service) Validate(v interface{}) error {
+	errors := make([]string, 0, 10)
+	switch t := v.(type) {
+	case *GetUsers:
+		if val, err := strconv.Atoi(t.Limit); strings.TrimSpace(t.Limit) != "" && (err != nil || val < 0) {
+			errors = append(errors, "limit must be a positive integer")
+		}
+		if val, err := strconv.Atoi(t.Offset); strings.TrimSpace(t.Offset) != "" && (err != nil || val < 0) {
+			errors = append(errors, "offset must be a positive integer")
+		}
+	case *CreateUser:
+		if strings.TrimSpace(t.Name) == "" {
+			errors = append(errors, "username must not be empty")
+		}
+		if strings.TrimSpace(t.Password) == "" {
+			errors = append(errors, "password must not be empty")
+		}
+	case *CreateWallet:
+		if !IsValidAmount(t.Balance) {
+			errors = append(errors, "balance must be a valid amount")
+		}
+	default:
+		zap.L().Warn("validation is not supported", zap.Any("type", t))
+		return nil
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf("validation errors: [%s]", strings.Join(errors, "; "))
+	}
+	return nil
+}
+
+func IsValidAmount(amount string) bool {
+	if strings.TrimSpace(amount) == "" {
+		return false
+	}
+	matches, err := regexp.MatchString(`^\d+(\.\d{1,2})?$`, amount)
+	return matches && err == nil
 }
 
 func (u GetUsers) LimitN() uint64 {
@@ -39,29 +84,8 @@ func (u GetUsers) OffsetN() uint64 {
 	return res
 }
 
-func (s *Service) Validate(v interface{}) error {
-	errors := make([]string, 0, 10)
-	switch t := v.(type) {
-	case *GetUsers:
-		if val, err := strconv.Atoi(t.Limit); strings.TrimSpace(t.Limit) != "" && (err != nil || val < 0) {
-			errors = append(errors, "limit must be a positive integer")
-		}
-		if val, err := strconv.Atoi(t.Offset); strings.TrimSpace(t.Offset) != "" && (err != nil || val < 0) {
-			errors = append(errors, "offset must be a positive integer")
-		}
-	case *CreateUser:
-		if strings.TrimSpace(t.Name) == "" {
-			errors = append(errors, "username must not be empty")
-		}
-		if strings.TrimSpace(t.Password) == "" {
-			errors = append(errors, "password must not be empty")
-		}
-	default:
-		zap.L().Warn("validation is not supported", zap.Any("type", t))
-		return nil
-	}
-	if len(errors) > 0 {
-		return fmt.Errorf("validation errors: [%s]", strings.Join(errors, "; "))
-	}
-	return nil
+func (w CreateWallet) ToAmount() models.Amount {
+	// Ignore error as it should be handled by validation below
+	res, _ := models.ToAmount(w.Balance)
+	return res
 }
