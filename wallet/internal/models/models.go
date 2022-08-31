@@ -18,17 +18,17 @@ type Amount uint64
 type Wallet struct {
 	ID      string
 	Balance Amount
-	UserId  string
+	UserID  string
 }
 
 type Transaction struct {
 	ID             string
-	CreditWalletId string
-	DebitWalletId  string
+	CreditWalletID string
+	DebitWalletID  string
 	Amount         Amount
 	Type           uint8
 	FeeAmount      Amount
-	FeeWalletId    string
+	FeeWalletID    string
 }
 
 type UserTransaction struct {

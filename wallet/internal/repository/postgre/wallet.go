@@ -7,15 +7,15 @@ import (
 	"github.com/Roma7-7-7/workshops/wallet/internal/models"
 )
 
-func (r *Repository) CreateWallet(userId string, balance models.Amount) (*models.Wallet, error) {
+func (r *Repository) CreateWallet(userID string, balance models.Amount) (*models.Wallet, error) {
 	var wallet models.Wallet
 	err := psql.Insert("wallets").
 		Columns("balance", "user_id").
-		Values(balance, userId).
+		Values(balance, userID).
 		Suffix("RETURNING id, balance, user_id").
 		RunWith(r.db).
 		QueryRow().
-		Scan(&wallet.ID, &wallet.Balance, &wallet.UserId)
+		Scan(&wallet.ID, &wallet.Balance, &wallet.UserID)
 
 	if err != nil {
 		return nil, fmt.Errorf("create wallet: %v", err)
@@ -25,13 +25,13 @@ func (r *Repository) CreateWallet(userId string, balance models.Amount) (*models
 }
 
 func (r *Repository) GetWalletOwner(id string) (string, error) {
-	var userId string
+	var userID string
 	err := psql.Select("user_id").
 		From("wallets").
 		Where(sq.Eq{"id": id}).
 		RunWith(r.db).
 		QueryRow().
-		Scan(&userId)
+		Scan(&userID)
 
 	if err == sql.ErrNoRows {
 		return "", nil
@@ -39,17 +39,17 @@ func (r *Repository) GetWalletOwner(id string) (string, error) {
 		return "", fmt.Errorf("get wallet owner: %v", err)
 	}
 
-	return userId, nil
+	return userID, nil
 }
 
-func (r *Repository) GetWalletById(id string) (*models.Wallet, error) {
+func (r *Repository) GetWalletByID(id string) (*models.Wallet, error) {
 	var wallet models.Wallet
 	err := psql.Select("id", "balance", "user_id").
 		From("wallets").
 		Where(sq.Eq{"id": id}).
 		RunWith(r.db).
 		QueryRow().
-		Scan(&wallet.ID, &wallet.Balance, &wallet.UserId)
+		Scan(&wallet.ID, &wallet.Balance, &wallet.UserID)
 
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -91,26 +91,26 @@ func (r *Repository) GetWalletTransactionsU(id string) (*models.Wallet, []*model
 	var wallet models.Wallet
 	var transactions []*models.UserTransaction
 	for rows.Next() {
-		var tId, cwId, dwId, fwId, cuId, duId sql.NullString
+		var tID, cwID, dwID, fwID, cuID, duID sql.NullString
 		var tType, tAmount sql.NullInt64
 
-		if err = rows.Scan(&wallet.ID, &wallet.Balance, &wallet.UserId,
-			&tId, &cwId, &dwId, &tAmount, &tType, &fwId,
-			&cuId, &duId); err != nil {
+		if err = rows.Scan(&wallet.ID, &wallet.Balance, &wallet.UserID,
+			&tID, &cwID, &dwID, &tAmount, &tType, &fwID,
+			&cuID, &duID); err != nil {
 			return nil, nil, fmt.Errorf("scan wallet: %v", err)
 		}
-		if tId.Valid {
+		if tID.Valid {
 			transactions = append(transactions, &models.UserTransaction{
 				Transaction: models.Transaction{
-					ID:             tId.String,
-					CreditWalletId: cwId.String,
-					DebitWalletId:  dwId.String,
+					ID:             tID.String,
+					CreditWalletID: cwID.String,
+					DebitWalletID:  dwID.String,
 					Amount:         models.AmountFromDB(tAmount.Int64),
 					Type:           uint8(tType.Int64),
-					FeeWalletId:    fwId.String,
+					FeeWalletID:    fwID.String,
 				},
-				CreditUserID: cuId.String,
-				DebitUserID:  duId.String,
+				CreditUserID: cuID.String,
+				DebitUserID:  duID.String,
 			})
 		}
 	}

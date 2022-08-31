@@ -40,7 +40,7 @@ func (s *Server) GetWallet(c *gin.Context) {
 		return
 	}
 
-	event, err := s.service.GetWalletById(id)
+	event, err := s.service.GetWalletByID(id)
 	if err != nil {
 		zap.L().Error("get wallet", zap.Error(err))
 		api.ServerErrorA(c, err)
@@ -77,16 +77,16 @@ func (s *Server) registerWallet(e *gin.Engine, middleware ...gin.HandlerFunc) {
 	e.GET("/wallets/:id/transactions", append(middleware, s.GetWalletWithUserTransactions)...)
 }
 
-func (s *Server) validateOwner(c *gin.Context, walletId string) bool {
-	if owner, err := s.service.GetWalletOwner(walletId); err != nil {
-		zap.L().Error("get event owner of wallet", zap.String("ID", walletId), zap.Error(err))
+func (s *Server) validateOwner(c *gin.Context, walletID string) bool {
+	if owner, err := s.service.GetWalletOwner(walletID); err != nil {
+		zap.L().Error("get event owner of wallet", zap.String("ID", walletID), zap.Error(err))
 		api.ServerErrorA(c, err)
 		return false
 	} else if owner == "" {
-		api.NotFoundA(c, fmt.Sprintf("wallet with ID=\"%s\"", walletId))
+		api.NotFoundA(c, fmt.Sprintf("wallet with ID=\"%s\"", walletID))
 		return false
 	} else if owner != auth.GetContext(c).UserID() {
-		api.ForbiddenA(c, fmt.Sprintf("wallet with ID=\"%s\"", walletId))
+		api.ForbiddenA(c, fmt.Sprintf("wallet with ID=\"%s\"", walletID))
 		return false
 	}
 	return true
@@ -95,7 +95,7 @@ func (s *Server) validateOwner(c *gin.Context, walletId string) bool {
 func walletToApi(w *models.Wallet) *api.Wallet {
 	return &api.Wallet{
 		ID:      w.ID,
-		UserId:  w.UserId,
+		UserID:  w.UserID,
 		Balance: w.Balance.RoundWholePart(),
 	}
 }
@@ -104,14 +104,14 @@ func transactionUToApi(t *models.UserTransaction) *api.TransactionU {
 	return &api.TransactionU{
 		Transaction: api.Transaction{
 			ID:             t.ID,
-			CreditWalletId: t.CreditWalletId,
-			DebitWalletId:  t.DebitWalletId,
+			CreditWalletID: t.CreditWalletID,
+			DebitWalletID:  t.DebitWalletID,
 			Amount:         t.Amount.RoundWholePart(),
 			Type:           t.Type,
-			FeeWalletId:    t.FeeWalletId,
+			FeeWalletID:    t.FeeWalletID,
 			FeeAmount:      t.FeeAmount.RoundWholePart(),
 		},
 		CreditUserID: t.CreditUserID,
-		DebitUserId:  t.DebitUserID,
+		DebitUserID:  t.DebitUserID,
 	}
 }

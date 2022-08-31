@@ -13,8 +13,8 @@ type Service interface {
 	GetUsers(limit uint64, offset uint64) ([]*models.User, error)
 	CreateUser(name string, password string) (*models.User, error)
 
-	CreateWallet(userId string, balance models.Amount) (*models.Wallet, error)
-	GetWalletById(id string) (*models.Wallet, error)
+	CreateWallet(userID string, balance models.Amount) (*models.Wallet, error)
+	GetWalletByID(id string) (*models.Wallet, error)
 	GetWalletOwner(id string) (string, error)
 	GetWalletTransactionsU(id string) (*models.Wallet, []*models.UserTransaction, error)
 }
