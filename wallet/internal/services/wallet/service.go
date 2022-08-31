@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Roma7-7-7/workshops/wallet/internal/models"
+	"github.com/Roma7-7-7/workshops/wallet/internal/repository/postgre"
 )
 
 type Repository interface {
@@ -15,7 +16,12 @@ type Repository interface {
 	GetWalletOwner(id string) (string, error)
 	GetWalletByID(id string) (*models.Wallet, error)
 	GetWalletTransactionsU(id string) (*models.Wallet, []*models.UserTransaction, error)
+
+	GetTransactionsByUserID(userID string) ([]*models.UserTransaction, error)
+	TransferFunds(creditWalletID string, debitWalletId string, amount models.Amount, fee models.Amount) (*models.Transaction, error)
 }
+
+const fee = 1.5
 
 // Service holds wallet business logic and works with repository
 type Service struct {
@@ -56,4 +62,21 @@ func (s *Service) GetWalletTransactionsU(id string) (*models.Wallet, []*models.U
 
 func (s *Service) GetWalletOwner(id string) (string, error) {
 	return s.repo.GetWalletOwner(id)
+}
+
+func (s *Service) GetTransactionsByUserID(userID string) ([]*models.UserTransaction, error) {
+	return s.repo.GetTransactionsByUserID(userID)
+}
+
+var ErrFeeWalletTransfer = errors.New("transfer directly from/to fee wallet is not allowed")
+
+func (s *Service) TransferFunds(creditWalletID string, debitWalletID string, amount models.Amount) (*models.Transaction, error) {
+	if creditWalletID == debitWalletID {
+		return nil, errors.New("wallets are equal")
+	}
+	if creditWalletID == postgre.FeeWalletId || debitWalletID == postgre.FeeWalletId {
+		return nil, ErrFeeWalletTransfer
+	}
+
+	return s.repo.TransferFunds(creditWalletID, debitWalletID, amount, models.Amount(uint64(float64(amount)/100*fee)))
 }

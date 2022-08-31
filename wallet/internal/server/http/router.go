@@ -20,6 +20,7 @@ func (s *Server) Register(app *gin.Engine) {
 	app.POST("/users", s.PostUser)
 
 	s.registerWallet(app, s.auth.ValidateGin)
+	s.registerTransactions(app, s.auth.ValidateGin)
 }
 
 func recoveryHandler(c *gin.Context, err interface{}) {

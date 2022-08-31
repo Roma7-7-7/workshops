@@ -41,6 +41,10 @@ func AmountFromDB(value int64) Amount {
 	return Amount(value)
 }
 
+func AmountFromDBU(value uint64) Amount {
+	return Amount(value)
+}
+
 func ToAmount(value string) (Amount, error) {
 	if strings.TrimSpace(value) == "" {
 		return Amount(0), nil
@@ -58,4 +62,8 @@ func ToAmount(value string) (Amount, error) {
 
 func (a Amount) RoundWholePart() int {
 	return int(a / 100)
+}
+
+func (a Amount) ToDB() uint64 {
+	return uint64(a)
 }

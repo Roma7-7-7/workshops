@@ -13,7 +13,7 @@ import (
 type Service struct {
 }
 
-type GetUsers struct {
+type GetPageable struct {
 	Limit  string
 	Offset string
 }
@@ -27,10 +27,16 @@ type CreateWallet struct {
 	Balance string `json:"balance"`
 }
 
+type CreateTransaction struct {
+	CreditWalletID string `json:"credit_wallet_id"`
+	DebitWalletID  string `json:"debit_wallet_id"`
+	Amount         string `json:"amount"`
+}
+
 func (s *Service) Validate(v interface{}) error {
 	errors := make([]string, 0, 10)
 	switch t := v.(type) {
-	case *GetUsers:
+	case *GetPageable:
 		if val, err := strconv.Atoi(t.Limit); strings.TrimSpace(t.Limit) != "" && (err != nil || val < 0) {
 			errors = append(errors, "limit must be a positive integer")
 		}
@@ -47,6 +53,19 @@ func (s *Service) Validate(v interface{}) error {
 	case *CreateWallet:
 		if !IsValidAmount(t.Balance) {
 			errors = append(errors, "balance must be a valid amount")
+		}
+	case *CreateTransaction:
+		if strings.TrimSpace(t.CreditWalletID) == "" {
+			errors = append(errors, "credit_wallet_id must not be empty")
+		}
+		if strings.TrimSpace(t.DebitWalletID) == "" {
+			errors = append(errors, "debit_wallet_id must not be empty")
+		}
+		if t.CreditWalletID == t.DebitWalletID {
+			errors = append(errors, "credit_wallet_id and debit_wallet_id must not be equal")
+		}
+		if !IsValidAmount(t.Amount) {
+			errors = append(errors, "amount must be a valid amount")
 		}
 	default:
 		zap.L().Warn("validation is not supported", zap.Any("type", t))
@@ -66,7 +85,7 @@ func IsValidAmount(amount string) bool {
 	return matches && err == nil
 }
 
-func (u GetUsers) LimitN() uint64 {
+func (u GetPageable) LimitN() uint64 {
 	if strings.TrimSpace(u.Limit) == "" {
 		return 20
 	}
@@ -75,7 +94,7 @@ func (u GetUsers) LimitN() uint64 {
 	return res
 }
 
-func (u GetUsers) OffsetN() uint64 {
+func (u GetPageable) OffsetN() uint64 {
 	if strings.TrimSpace(u.Offset) == "" {
 		return 0
 	}

@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Server) GetUsers(c *gin.Context) {
-	req := validator.GetUsers{
+	req := validator.GetPageable{
 		Limit:  c.Query("limit"),
 		Offset: c.Query("offset"),
 	}

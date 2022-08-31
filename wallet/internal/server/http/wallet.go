@@ -99,19 +99,3 @@ func walletToApi(w *models.Wallet) *api.Wallet {
 		Balance: w.Balance.RoundWholePart(),
 	}
 }
-
-func transactionUToApi(t *models.UserTransaction) *api.TransactionU {
-	return &api.TransactionU{
-		Transaction: api.Transaction{
-			ID:             t.ID,
-			CreditWalletID: t.CreditWalletID,
-			DebitWalletID:  t.DebitWalletID,
-			Amount:         t.Amount.RoundWholePart(),
-			Type:           t.Type,
-			FeeWalletID:    t.FeeWalletID,
-			FeeAmount:      t.FeeAmount.RoundWholePart(),
-		},
-		CreditUserID: t.CreditUserID,
-		DebitUserID:  t.DebitUserID,
-	}
-}

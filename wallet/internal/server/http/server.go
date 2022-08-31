@@ -17,6 +17,9 @@ type Service interface {
 	GetWalletByID(id string) (*models.Wallet, error)
 	GetWalletOwner(id string) (string, error)
 	GetWalletTransactionsU(id string) (*models.Wallet, []*models.UserTransaction, error)
+
+	GetTransactionsByUserID(userID string) ([]*models.UserTransaction, error)
+	TransferFunds(creditWalletID string, debitWalletId string, amount models.Amount) (*models.Transaction, error)
 }
 
 type Auth interface {
