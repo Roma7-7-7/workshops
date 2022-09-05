@@ -7,6 +7,7 @@ import (
 	rest "github.com/Roma7-7-7/workshops/topcoin/internal/repository"
 	"github.com/Roma7-7-7/workshops/topcoin/internal/service"
 	"log"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -41,9 +42,9 @@ var separator *string
 func render(coins []*api.Coin) {
 	switch *output {
 	case "plain":
-		fmt.Printf("Rank%sSymbol%sPrice USD%s\n", *separator, *separator, *separator)
-		for _, coin := range coins {
-			fmt.Printf("%d%s%s%s%f%s\n", coin.Rank, *separator, coin.Symbol, *separator, *coin.PriceUSD, *separator)
+		err := writeCsv(os.Stdout, *separator, coins)
+		if err != nil {
+			log.Fatalf("failed to write csv: %v", err)
 		}
 	case "json":
 		for _, coin := range coins {
