@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-
 const stringToSearch = "concurrency"
 
 var sites = []string{
@@ -24,7 +23,6 @@ var sites = []string{
 	"https://en.wikipedia.org/wiki/Concurrency_(computer_science)#:~:text=In%20computer%20science%2C%20concurrency%20is,without%20affecting%20the%20final%20outcome.",
 }
 
-
 type SiteData struct {
 	data []byte
 	uri  string
@@ -34,21 +32,39 @@ func main() {
 	ctx, cancel := context.WithCancel(context.TODO())
 	resultsCh := make(chan SiteData, len(sites))
 
-	// TODO your code
+	crawl(ctx, cancel, resultsCh)
 
 	// give one second to validate if all other goroutines are closed
 	time.Sleep(time.Second)
 }
 
-// TODO implement function that will execute request function, will validate the output and cancel all other requests when needed page is found
-// and will listen to cancellation signal from context and will exit from the func when will receive it
+func crawl(ctx context.Context, cancel func(), results chan SiteData) {
+	for _, uri := range sites {
+		go request(ctx, uri, results)
+	}
 
-// TODO implement function that will perfrom request using the example under
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case result := <-results:
+			if strings.Contains(string(result.data), stringToSearch) {
+				fmt.Printf("%s string is found in %s\n", stringToSearch, result.uri)
+				cancel()
+				return
+			} else {
+				fmt.Printf("Nothing found in %s\n", result.uri)
+			}
+		case <-time.NewTimer(time.Minute).C:
+			fmt.Println("timeout")
+			cancel()
+			return
+		}
+	}
+}
 
-// TODO hint request function code:
-/*
-	Code to make request and read data
-
+func request(ctx context.Context, uri string, results chan<- SiteData) {
+	fmt.Printf("starting sending request to %s\n", uri)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
 		fmt.Println(err)
@@ -67,4 +83,8 @@ func main() {
 		return
 	}
 
-/*
+	results <- SiteData{
+		data: bodyBytes,
+		uri:  uri,
+	}
+}
